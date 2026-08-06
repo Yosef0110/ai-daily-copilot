@@ -2,7 +2,9 @@ create extension if not exists "pgcrypto";
 
 create table businesses (
   id uuid primary key default gen_random_uuid(),
-  owner_user_id uuid not null references auth.users(id) on delete cascade,
+  owner_user_id uuid not null unique
+    references auth.users(id)
+    on delete cascade,
   name varchar(150) not null,
   business_type varchar(100),
   currency varchar(10) not null default 'IDR',
@@ -138,3 +140,175 @@ create unique index uq_product_aliases_product_lower_name
 
 create index idx_transactions_business_date
   on transactions(business_id, transaction_date);
+
+-- ============================================================
+-- DATABASE PRIVILEGES
+-- ============================================================
+
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete
+on table businesses
+to authenticated;
+
+grant select, insert, update, delete
+on table products
+to authenticated;
+
+grant select, insert, update, delete
+on table product_aliases
+to authenticated;
+
+grant select, insert, update, delete
+on table transactions
+to authenticated;
+
+grant select, insert, update, delete
+on table transaction_items
+to authenticated;
+
+grant select, insert, update, delete
+on table inventory_movements
+to authenticated;
+
+
+-- ============================================================
+-- ROW LEVEL SECURITY
+-- ============================================================
+
+alter table businesses enable row level security;
+alter table products enable row level security;
+alter table product_aliases enable row level security;
+alter table transactions enable row level security;
+alter table transaction_items enable row level security;
+alter table inventory_movements enable row level security;
+
+
+-- ============================================================
+-- BUSINESSES POLICIES
+-- ============================================================
+
+create policy "Users can read their own business"
+on businesses
+for select
+to authenticated
+using (owner_user_id = (select auth.uid()));
+
+create policy "Users can update their own business"
+on businesses
+for update
+to authenticated
+using (owner_user_id = (select auth.uid()))
+with check (owner_user_id = (select auth.uid()));
+
+
+-- ============================================================
+-- PRODUCTS POLICIES
+-- ============================================================
+
+create policy "Users can read products from their business"
+on products
+for select
+to authenticated
+using (
+  business_id in (
+    select id
+    from businesses
+    where owner_user_id = (select auth.uid())
+  )
+);
+
+create policy "Users can insert products into their business"
+on products
+for insert
+to authenticated
+with check (
+  business_id in (
+    select id
+    from businesses
+    where owner_user_id = (select auth.uid())
+  )
+);
+
+create policy "Users can update products from their business"
+on products
+for update
+to authenticated
+using (
+  business_id in (
+    select id
+    from businesses
+    where owner_user_id = (select auth.uid())
+  )
+)
+with check (
+  business_id in (
+    select id
+    from businesses
+    where owner_user_id = (select auth.uid())
+  )
+);
+
+-- ============================================================
+-- PRODUCT ALIASES POLICIES
+-- ============================================================
+
+create policy "Users can read aliases from their business"
+on product_aliases
+for select
+to authenticated
+using (
+  product_id in (
+    select p.id
+    from products p
+    join businesses b on b.id = p.business_id
+    where b.owner_user_id = (select auth.uid())
+  )
+);
+
+create policy "Users can insert aliases into their business"
+on product_aliases
+for insert
+to authenticated
+with check (
+  product_id in (
+    select p.id
+    from products p
+    join businesses b on b.id = p.business_id
+    where b.owner_user_id = (select auth.uid())
+  )
+);
+
+create policy "Users can update aliases from their business"
+on product_aliases
+for update
+to authenticated
+using (
+  product_id in (
+    select p.id
+    from products p
+    join businesses b on b.id = p.business_id
+    where b.owner_user_id = (select auth.uid())
+  )
+)
+with check (
+  product_id in (
+    select p.id
+    from products p
+    join businesses b on b.id = p.business_id
+    where b.owner_user_id = (select auth.uid())
+  )
+);
+
+create policy "Users can delete aliases from their business"
+on product_aliases
+for delete
+to authenticated
+using (
+  product_id in (
+    select p.id
+    from products p
+    join businesses b on b.id = p.business_id
+    where b.owner_user_id = (select auth.uid())
+  )
+);
