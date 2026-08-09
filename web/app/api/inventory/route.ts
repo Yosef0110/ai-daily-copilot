@@ -8,12 +8,16 @@ type StockStatus = "safe" | "low" | "out";
 function getStockStatus(
   currentStock: number,
   minimumStock: number,
+  safetyStock: number,
 ): StockStatus {
-  if (currentStock === 0) {
+  if (currentStock <= 0) {
     return "out";
   }
 
-  if (currentStock <= minimumStock) {
+  const lowStockThreshold =
+    minimumStock + safetyStock;
+
+  if (currentStock <= lowStockThreshold) {
     return "low";
   }
 
@@ -162,16 +166,19 @@ export async function GET(request: Request) {
           product.minimum_stock,
         );
 
+        const safetystock = Number(
+            product.safety_stock,
+          );
+
         return {
           ...product,
           current_stock: currentStock,
           minimum_stock: minimumStock,
-          safety_stock: Number(
-            product.safety_stock,
-          ),
+          safety_stock: safetystock,
           stock_status: getStockStatus(
             currentStock,
             minimumStock,
+            safetystock,
           ),
         };
       },
