@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { EditProductModal } from "@/components/products/edit-product-modal";
 import { CreateProductModal } from "@/components/products/create-product-modal";
+import { Toast } from "@/components/shared/toast";
 
 import type {
   ApiErrorResponse,
@@ -18,6 +19,15 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    type: "success" | "danger" | "warning" | "info";
+    message: string;
+  }>({
+    visible: false,
+    type: "info",
+    message: "",
+  });
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -129,17 +139,39 @@ export default function ProductsPage() {
                 : currentProduct,
             ),
             );
+            setToast({
+              visible: true,
+              type: "success",
+              message: nextStatus
+                ? `Produk "${product.name}" berhasil diaktifkan.`
+                : `Produk "${product.name}" berhasil dinonaktifkan.`,
+            });
         } catch (error) {
-            window.alert(
-            error instanceof Error
+          setToast({
+            visible: true,
+            type: "danger",
+            message:
+              error instanceof Error
                 ? error.message
-                : "Gagal memperbarui status produk",
-            );
+                : "Gagal memperbarui status produk.",
+          });
         }
     }
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
+      <Toast
+        type={toast.type}
+        visible={toast.visible}
+        onClose={() =>
+          setToast((current) => ({
+            ...current,
+            visible: false,
+          }))
+        }
+      >
+        {toast.message}
+      </Toast>
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between">
           <div>
@@ -312,6 +344,11 @@ export default function ProductsPage() {
                   : product,
               ),
             );
+            setToast({
+              visible: true,
+              type: "success",
+              message: `Produk "${updatedProduct.name}" berhasil diperbarui.`,
+            });
           }}
         />
 
@@ -325,6 +362,11 @@ export default function ProductsPage() {
               newProduct,
               ...currentProducts,
             ]);
+            setToast({
+              visible: true,
+              type: "success",
+              message: `Produk "${newProduct.name}" berhasil ditambahkan.`,
+            });
           }}
         />
           </main>

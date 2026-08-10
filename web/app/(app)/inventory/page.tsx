@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { InventoryAdjustmentModal } from "@/components/inventory/inventory-adjustment-modal";
 import { InventoryHistoryModal } from "@/components/inventory/inventory-history-modal";
+import { Toast } from "@/components/shared/toast";
 
 
 import type {
@@ -15,6 +16,15 @@ export default function InventoryPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    type: "success" | "danger" | "warning" | "info";
+    message: string;
+  }>({
+    visible: false,
+    type: "info",
+    message: "",
+  });
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -104,6 +114,18 @@ export default function InventoryPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-4 text-slate-900 md:p-8">
+      <Toast
+        type={toast.type}
+        visible={toast.visible}
+        onClose={() =>
+          setToast((current) => ({
+            ...current,
+            visible: false,
+          }))
+        }
+      >
+        {toast.message}
+      </Toast>
       <div className="mx-auto max-w-7xl">
         <div>
           <h1 className="text-3xl font-bold">
@@ -335,25 +357,36 @@ export default function InventoryPage() {
         setIsSaving={setIsSaving}
         onClose={() => setAdjustingProduct(null)}
         onAdjusted={() => {
-            setRefreshKey((current) => current + 1);
+          setRefreshKey((current) => current + 1);
+
+          setToast({
+            visible: true,
+            type: "success",
+            message: "Stock berhasil diperbarui.",
+          });
         }}
-        />}
-      {adjustingProduct && (
-        <div className="hidden">
-          {adjustingProduct.name}
-        </div>
-      )}
+      />}
+
+      <InventoryAdjustmentModal
+        product={adjustingProduct}
+        isSaving={isSaving}
+        setIsSaving={setIsSaving}
+        onClose={() => setAdjustingProduct(null)}
+        onAdjusted={() => {
+          setRefreshKey((current) => current + 1);
+
+          setToast({
+            visible: true,
+            type: "success",
+            message: "Stock berhasil diperbarui.",
+          });
+        }}
+      />
 
       <InventoryHistoryModal
         product={historyProduct}
         onClose={() => setHistoryProduct(null)}
-        />
-
-      {historyProduct && (
-        <div className="hidden">
-          {historyProduct.name}
-        </div>
-      )}
+      />
     </main>
   );
 }
