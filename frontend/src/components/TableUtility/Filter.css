@@ -1,0 +1,18 @@
+.filterSearch > .form-group > .form-control:focus {
+  box-shadow: none !important
+}
+
+@media screen and (max-width: 768px) { 
+  .filterSearch {
+    width: 20%;
+  }
+
+  .labelWillHidden {
+    display: none;
+  }
+
+  .form-group > select {
+    border-radius: 0 !important;
+    margin-left: 0 !important;
+  }
+}
