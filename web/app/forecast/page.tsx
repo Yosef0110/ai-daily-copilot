@@ -6,10 +6,10 @@ import {
 } from 'recharts';
 
 export default function ForecastingModule() {
-  // 1. NEW: State to hold the dynamic list of products from the backend
+  // State to hold the dynamic list of products from the backend
   const [availableProducts, setAvailableProducts] = useState<string[]>([]);
   
-  // 2. Inputs State (Notice product starts empty now)
+  // Inputs State (Notice product starts empty now)
   const [product, setProduct] = useState("");
   const [days, setDays] = useState(7);
   const [model, setModel] = useState("auto_arima");
@@ -20,7 +20,7 @@ export default function ForecastingModule() {
   const [insight, setInsight] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 3. NEW: Fetch products automatically when the page loads
+  // Fetch products automatically when the page loads
   useEffect(() => {
     const fetchProducts = async () => {
       try {
