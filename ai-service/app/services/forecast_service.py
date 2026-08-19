@@ -56,11 +56,11 @@ def forecast_holt_winters(series: pd.Series, days: int):
 
 def generate_forecast(ts_data: pd.Series, days_forward: int = 7, model_type: str = "auto_arima"):
     """
-    GOAL #1 & #2: Model Selection & Forecast Selection.
+    Model Selection & Forecast Selection.
     Takes the requested days (1-7) and routes to the selected model.
     """
     # Ensure time series has a strict daily frequency
-    ts_data = ts_data.asfreq('D').fillna(method='ffill')
+    ts_data = ts_data.asfreq('D').ffill()
 
     if model_type == "naive":
         preds, lower, upper = forecast_naive(ts_data, days_forward)

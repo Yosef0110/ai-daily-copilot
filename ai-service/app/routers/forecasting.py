@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Query, HTTPException
 import pandas as pd
-import os
+from pathlib import Path
+
 from app.services.forecast_service import generate_forecast
+from app.services.forecast_recommendation_service import generate_action_recommendation 
 from app.schemas.forecasting import ForecastResponse
 
 router = APIRouter(
@@ -9,10 +11,25 @@ router = APIRouter(
     tags=["Forecasting"]
 )
 
+@router.get("/products")
+def get_available_products():
+    """
+    Fetch a list of all unique products available in the database/CSV.
+    """
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    file_path = BASE_DIR / "data" / "seed_sales_history.csv"
+    
+    try:
+        df = pd.read_csv(file_path)
+        # Grab the column, get unique values, and convert to a standard Python list
+        products = df['product_name'].dropna().unique().tolist()
+        return products
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="Could not locate sales data.")
+
 @router.get("/predict", response_model=ForecastResponse)
 def get_prediction(
     product_name: str = Query(..., description="The name of the product (e.g., 'Aqua 600ml')"),
-    #1-7 DAYS RULE: ge=1 (greater/equal 1), le=7 (less/equal 7)
     days: int = Query(7, ge=1, le=7, description="Number of days to predict (Must be between 1 and 7)"),
     model_type: str = Query("auto_arima", description="Choose: naive, auto_arima, holt_winters"),
     current_stock: int = Query(..., ge=0, description="Current inventory level of the product")
@@ -20,15 +37,15 @@ def get_prediction(
     """
     Generate a sales forecast for a specific product.
     """
-
-    ##IMPORTANT!!!!!!!##
-    #Load the seed data (For testing purposes, this would be modified when the database format is clear and where to fetch it)
-    file_path = os.path.join(os.path.dirname(__file__), "../../test/seed_sales_history.csv")
+    #HARDCODED, NEED TO ROUTE PROPERLY LATER
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    file_path = BASE_DIR / "data" / "seed_sales_history.csv"
     
     try:
+        #Try catch in case of error in reading the file, or if the file is missing
         df = pd.read_csv(file_path)
     except FileNotFoundError:
-        raise HTTPException(status_code=500, detail="Could not locate seed_sales_history.csv")
+        raise HTTPException(status_code=500, detail=f"File missing. I am looking here: {file_path}")
 
     #Filter data for the requested product
     product_data = df[df['product_name'] == product_name]
@@ -40,18 +57,8 @@ def get_prediction(
     product_data['date'] = pd.to_datetime(product_data['date'])
     ts_data = product_data.set_index('date')['quantity_sold']
 
-    #Call the service
+    #Runs forecast AND recommendation before returning
     try:
-        result = generate_forecast(ts_data, days_forward=days, model_type=model_type)
-        return result
-    except ValueError as e:
-        #Catches unsupported model types
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")
-
-    try:
-        #Get the forecast predictions
         result = generate_forecast(ts_data, days_forward=days, model_type=model_type)
         
         #Recommendation Logic 
