@@ -43,11 +43,11 @@
   color: white;
 }
 
-.btn-photo:hover {
+.btn-photo:hover:not(:disabled) {
   background-color: #1d4ed8 !important;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
-.custom-button:active {
+.custom-button:active:not(:disabled) {
   transform: translateY(2px);
 }

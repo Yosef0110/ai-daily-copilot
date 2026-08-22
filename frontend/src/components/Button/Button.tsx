@@ -6,11 +6,12 @@ interface ButtonProps {
   icon?: ReactNode;
   className? : string;
   backgroundColor?: string;
+  disabled? : boolean;
   color?: string;
   onClick?: () => void;
 }
 
-const Button = ({backgroundColor, className = "",color , children, icon, onClick}: ButtonProps) => {
+const Button = ({backgroundColor, className = "",color , children, icon, disabled, onClick}: ButtonProps) => {
   return (
     <button
       type="button"
@@ -20,6 +21,7 @@ const Button = ({backgroundColor, className = "",color , children, icon, onClick
         backgroundColor: backgroundColor,
       }}
       className={className + ' custom-button'}
+      disabled={disabled}
     >
       {icon}
       {children}

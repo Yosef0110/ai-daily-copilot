@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-const CameraArrow = (props: SVGProps<SVGSVGElement>) => {
+const CameraIcon = (props: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -25,4 +25,4 @@ const CameraArrow = (props: SVGProps<SVGSVGElement>) => {
   );
 };
 
-export default CameraArrow;
+export default CameraIcon;
