@@ -90,6 +90,11 @@
   background-color: transparent;
 }
 
+.actionTableWrapper {
+  display: flex;
+  gap: 5px;
+}
+
 @media screen and (max-width: 768px) {
   .searchContainer {
     gap: 0;

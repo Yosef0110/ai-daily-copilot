@@ -37,7 +37,6 @@ const Filter = ({ setColumnFilters }: FilterProps) => {
           <select
             className="form-control"
             id="statusFilter"
-            defaultValue={"-"}
             onChange={handleStatusChange}
           >
             <option value="-">-</option>

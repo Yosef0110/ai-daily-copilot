@@ -14,6 +14,7 @@ interface SearchBarProps {
 const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
   const [searchColumn, setSearchColumn] = useState("");
   const [searchValue, setSearchValue] = useState("");
+
   const updateFilter = (columnId: string, value: string) => {
     if (!columnId) return;
 
@@ -23,15 +24,19 @@ const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
     ]);
   };
 
-  const handleColumnChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleColumnChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const columnId = e.target.value;
 
     setSearchColumn(columnId);
-    setSearchValue("");
 
-    setColumnFilters((prev) => {
-      return prev.filter((filter) => filter.id === "status");
-    });
+    setColumnFilters((prev) => [
+      ...prev.filter((filter) => filter.id !== searchColumn),
+      ...(searchValue
+        ? [{ id: columnId, value: searchValue }]
+        : []),
+    ]);
   };
 
   return (
@@ -43,7 +48,6 @@ const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
           <select
             className="filterSearch"
             id="searchColumn"
-            // defaultValue={}
             value={searchColumn}
             onChange={handleColumnChange}
           >

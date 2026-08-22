@@ -21,7 +21,6 @@
 
 .searchBar {
   position: relative;
-
 }
 
 .searchBar > svg {
@@ -36,6 +35,11 @@
   border-bottom-left-radius: 0px !important;
   box-shadow: none !important
 }
+
+/* .searchBar > input:focus {
+  border-width: 1px;
+  border-color: black;
+} */
 
 .searchTitle {
   min-width: 45%;

@@ -47,6 +47,7 @@ interface TableProps {
   withSearch?: boolean; // Apakah Menggunakan Searching
   withFilter?: boolean; // Apakah Menggunakan Filter Status
   withPagination? : boolean; // Apakah Menggunakan Paging
+  withAction? : boolean; // Apakah mau ada tombol aksi
 }
 
 const Table = ({
@@ -55,6 +56,7 @@ const Table = ({
   withSearch = true,
   withFilter = true,
   withPagination = true,
+  withAction = true
 }: TableProps) => {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -62,7 +64,6 @@ const Table = ({
   });
 
   const [columnFilters, setColumnFilter] = useState<ColumnFiltersState>([]);
-
   const equalsNumber = (row: any, columnId: string, filterValue: unknown) => {
     const value = row.getValue(columnId);
 
@@ -178,6 +179,11 @@ const Table = ({
                       />
                     </th>
                   ))}
+                  { withAction &&
+                  <th>
+                    Action
+                  </th>
+                  }
                 </tr>
               ))}
             </thead>
@@ -205,6 +211,15 @@ const Table = ({
                       )}
                     </td>
                   ))}
+                  
+                  { withAction &&
+                  <td>
+                    <div className="actionTableWrapper">
+                      <button>Tambahkan</button>
+                      <button>Hapus</button>
+                    </div>
+                  </td>
+                  }
                 </tr>
               ))}
             </tbody>
