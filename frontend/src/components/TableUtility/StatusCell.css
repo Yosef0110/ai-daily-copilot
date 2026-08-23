@@ -20,6 +20,11 @@
   color: #15803d !important;
 }
 
+.status-low { 
+  background-color: #fcfcdc !important;
+  color: #8c9016 !important;
+}
+
 .status-inactive {
   background-color: #fee2e2 !important;
   color: #dc2626 !important;

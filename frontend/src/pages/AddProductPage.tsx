@@ -31,18 +31,18 @@ const COLUMNS = [
     header: "Nama Product",
     accessorKey: "name",
   },
-  {
-    header: "Kategori Produk",
-    accessorKey: "category",
-  },
+  // {
+  //   header: "Kategori Produk",
+  //   accessorKey: "category",
+  // },
   {
     header: "SKU",
     accessorKey: "SKU",
   },
-  {
-    header: "Unit",
-    accessorKey: "unit",
-  },
+  // {
+  //   header: "Unit",
+  //   accessorKey: "unit",
+  // },
   {
     header: "Stok Tersisa",
     accessorKey: "current_stock",
@@ -57,7 +57,7 @@ const COLUMNS = [
     header: "Status",
     accessorKey: "status",
     cell: StatusCell,
-    filterFn: "equalsBoolean",
+    filterFn: "equalsNumber",
     enableColumnSearch: false,
   },
   {

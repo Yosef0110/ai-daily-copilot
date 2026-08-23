@@ -24,11 +24,12 @@ const Filter = ({ setColumnFilters }: FilterProps) => {
         ...filtersWithoutStatus,
         {
           id: "status",
-          value: value === "true",
+          value: value,
         },
       ];
     });
   };
+
   return (
     <>
       <form className="filterSearch">
@@ -40,8 +41,9 @@ const Filter = ({ setColumnFilters }: FilterProps) => {
             onChange={handleStatusChange}
           >
             <option value="-">-</option>
-            <option value="true">Stock Tersedia</option>
-            <option value="false">Stock Habis</option>
+            <option value={2}>Stock Tersedia</option>
+            <option value={1}>Stock Menipis</option>
+            <option value={0}>Stock Habis</option>
           </select>
         </div>
       </form>

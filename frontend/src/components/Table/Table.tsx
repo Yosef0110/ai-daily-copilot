@@ -29,7 +29,6 @@ import DobuleLeftChevronArrow from "../Icons/DoubleLeftChevronArrow";
 import DoubleRightChevronArrow from "../Icons/DoubleRightChevronArrow";
 import { useState } from "react";
 
-
 /**
  *  Contoh bisa diliat di '../pages/AddProductPage.tsx'
  */
@@ -46,8 +45,8 @@ interface TableProps {
 
   withSearch?: boolean; // Apakah Menggunakan Searching
   withFilter?: boolean; // Apakah Menggunakan Filter Status
-  withPagination? : boolean; // Apakah Menggunakan Paging
-  withAction? : boolean; // Apakah mau ada tombol aksi
+  withPagination?: boolean; // Apakah Menggunakan Paging
+  withAction?: boolean; // Apakah mau ada tombol aksi
 }
 
 const Table = ({
@@ -56,7 +55,7 @@ const Table = ({
   withSearch = true,
   withFilter = true,
   withPagination = true,
-  withAction = true
+  withAction = true,
 }: TableProps) => {
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -109,6 +108,21 @@ const Table = ({
     onPaginationChange: setPagination,
   });
 
+  const getStatusClass = (status: number) => {
+    switch (status) {
+      case 2:
+        return "status status-active";
+      case 1:
+        return "status status-low";
+      case 0:
+        return "status status-inactive";
+      default:
+        return "";
+    }
+  };
+
+
+  console.log(columnFilters);
   return (
     <>
       <div className="container-sm tableContainer">
@@ -179,11 +193,7 @@ const Table = ({
                       />
                     </th>
                   ))}
-                  { withAction &&
-                  <th>
-                    Action
-                  </th>
-                  }
+                  {withAction && <th  className="actionColumn">Action</th>}
                 </tr>
               ))}
             </thead>
@@ -199,9 +209,7 @@ const Table = ({
                       key={cell.id}
                       className={
                         cell.column.id === "status"
-                          ? cell.getValue()
-                            ? "status status-active"
-                            : "status status-inactive"
+                          ? getStatusClass(cell.getValue<number>())
                           : ""
                       }
                     >
@@ -211,23 +219,22 @@ const Table = ({
                       )}
                     </td>
                   ))}
-                  
-                  { withAction &&
-                  <td>
-                    <div className="actionTableWrapper">
-                      <button>Tambahkan</button>
-                      <button>Hapus</button>
-                    </div>
-                  </td>
-                  }
+
+                  {withAction && (
+                    <td>
+                      <div className="actionTableWrapper">
+                        <button className="adjustButton">Adjust</button>
+                        <button className="historyButton">History</button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        
-        {
-          withPagination &&
+
+        {withPagination && (
           <div className="pagination">
             <div className="pageSize">
               <span>Banyak Item: </span>
@@ -251,13 +258,13 @@ const Table = ({
                   onClick={() => table.firstPage()}
                   disabled={!table.getCanPreviousPage()}
                 >
-                  <DobuleLeftChevronArrow width={20}/>
+                  <DobuleLeftChevronArrow width={20} />
                 </button>
                 <button
                   onClick={() => table.previousPage()}
                   disabled={!table.getCanPreviousPage()}
                 >
-                  <LeftChevronArrow width={20}/>
+                  <LeftChevronArrow width={20} />
                 </button>
               </div>
 
@@ -270,19 +277,18 @@ const Table = ({
                   onClick={() => table.nextPage()}
                   disabled={!table.getCanNextPage()}
                 >
-                  <RightChevronArrow width={20}/>
+                  <RightChevronArrow width={20} />
                 </button>
                 <button
                   onClick={() => table.lastPage()}
                   disabled={!table.getCanNextPage()}
                 >
-                  <DoubleRightChevronArrow width={20}/>
+                  <DoubleRightChevronArrow width={20} />
                 </button>
               </div>
             </div>
           </div>
-        }
-
+        )}
       </div>
     </>
   );

@@ -9,39 +9,105 @@ interface Props {
   onClose: () => void;
 }
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+const formatFileSize = (bytes: number) => {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
 const AddProductPhoto = ({ onClose }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
   const [showCamera, setShowCamera] = useState(false);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isImageFullscreen, setIsImageFullscreen] = useState(false);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const [showToast, setToastVisibility] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
 
-    if (!file) return;
+    if (files.length === 0) return;
 
-    setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    const validFiles: File[] = [];
+
+    files.forEach((file) => {
+      if (file.size > MAX_FILE_SIZE) {
+        setToastMessage(`${file.name} terlalu besar. Maksimal 5 MB.`);
+
+        setToastVisibility(true);
+
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    if (validFiles.length === 0) {
+      e.target.value = "";
+      return;
+    }
+
+    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+
+    setPhotos((prev) => [...prev, ...validFiles]);
+
+    setPhotoPreviews((prev) => [...prev, ...newPreviews]);
+
+    if (photos.length === 0) {
+      setSelectedIndex(0);
+    }
 
     e.target.value = "";
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const previewToRemove = photoPreviews[index];
+
+    if (previewToRemove) {
+      URL.revokeObjectURL(previewToRemove);
+    }
+
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+
+    setSelectedIndex((prev) => {
+      if (prev > index) {
+        return prev - 1;
+      }
+
+      if (prev === index) {
+        return Math.max(0, prev - 1);
+      }
+
+      return prev;
+    });
   };
 
   const openDesktopCamera = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setToastMessage("Browser ini tidak mendukung akses kamera.");
+
       setToastVisibility(true);
       return;
     }
@@ -60,6 +126,7 @@ const AddProductPhoto = ({ onClose }: Props) => {
       console.error("Gagal membuka kamera:", error);
 
       setToastMessage("Kamera tidak tersedia atau izin kamera ditolak.");
+
       setToastVisibility(true);
     }
   };
@@ -71,6 +138,7 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       setToastMessage("Kamera belum siap. Coba lagi.");
+
       setToastVisibility(true);
       return;
     }
@@ -94,8 +162,17 @@ const AddProductPhoto = ({ onClose }: Props) => {
           type: "image/jpeg",
         });
 
-        setPhoto(file);
-        setPhotoPreview(URL.createObjectURL(file));
+        const preview = URL.createObjectURL(file);
+
+        setPhotos((prev) => {
+          const newIndex = prev.length;
+
+          setSelectedIndex(newIndex);
+
+          return [...prev, file];
+        });
+
+        setPhotoPreviews((prev) => [...prev, preview]);
 
         stopCamera();
       },
@@ -130,19 +207,31 @@ const AddProductPhoto = ({ onClose }: Props) => {
   };
 
   const handleCancel = () => {
-    setPhoto(null);
-    setPhotoPreview(null);
+    photoPreviews.forEach((preview) => {
+      URL.revokeObjectURL(preview);
+    });
+
+    setPhotos([]);
+    setPhotoPreviews([]);
+    setSelectedIndex(0);
   };
 
   const handleSubmit = () => {
-    if (!photo) return;
+    if (photos.length === 0) return;
 
     setIsSubmitting(true);
 
-    console.log("File:", photo);
-    console.log("Nama:", photo.name);
-    console.log("Size:", photo.size);
-    console.log("Type:", photo.type);
+    console.log("Semua foto:", photos);
+
+    photos.forEach((photo, index) => {
+      console.log(`Foto ${index + 1}:`, {
+        name: photo.name,
+        size: photo.size,
+        type: photo.type,
+      });
+    });
+
+    console.log("Foto utama:", photos[selectedIndex]);
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -173,15 +262,15 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
   useEffect(() => {
     return () => {
-      if (photoPreview) {
-        URL.revokeObjectURL(photoPreview);
-      }
+      photoPreviews.forEach((preview) => {
+        URL.revokeObjectURL(preview);
+      });
 
       if (cameraStream) {
         cameraStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [photoPreview, cameraStream]);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -201,6 +290,7 @@ const AddProductPhoto = ({ onClose }: Props) => {
         setIsCameraReady(true);
 
         console.log("Camera ready");
+
         console.log("Resolution:", {
           width: video.videoWidth,
           height: video.videoHeight,
@@ -219,7 +309,6 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
   return (
     <div className="formWrapper">
-      {/* TOAST */}
       <Toast
         type="danger"
         visible={showToast}
@@ -227,8 +316,6 @@ const AddProductPhoto = ({ onClose }: Props) => {
       >
         {toastMessage}
       </Toast>
-
-      {/* LOADING */}
       <div className="loading-container" hidden={!isSubmitting}>
         <div className="spinner-border" role="status">
           <span className="visually-hidden">Loading...</span>
@@ -236,8 +323,6 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
         <span className="loading-text">Sedang Bekerja</span>
       </div>
-
-      {/* HEADER */}
       <div className="formHeader">
         <div>
           <h2 className="mb-2">Foto Product</h2>
@@ -266,31 +351,27 @@ const AddProductPhoto = ({ onClose }: Props) => {
           </svg>
         </div>
       </div>
-
-      {/* MAIN */}
       <div className="formQuery">
         <div className="formBody">
-          {!photoPreview && !showCamera && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={handleFileChange}
+          />
+
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onChange={handleFileChange}
+          />
+          {!showCamera && photoPreviews.length === 0 && (
             <div className="container photoAddWrapper">
-              {/* FILE */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={handleFileChange}
-              />
-
-              {/* MOBILE CAMERA */}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                hidden
-                onChange={handleFileChange}
-              />
-
               <Button
                 backgroundColor="#cffce7"
                 color="#047857"
@@ -307,7 +388,6 @@ const AddProductPhoto = ({ onClose }: Props) => {
                 className="btn-photo"
                 icon={<CameraIcon width={25} />}
                 onClick={handleCamera}
-
               >
                 Tambahkan dengan Foto
               </Button>
@@ -343,16 +423,56 @@ const AddProductPhoto = ({ onClose }: Props) => {
             </div>
           )}
 
-          {photoPreview && (
+          {photoPreviews.length > 0 && !showCamera && (
             <div className="photoPreviewWrapper">
-              <h3>Foto kamu:</h3>
-
               <div className="photoWrapper">
                 <img
-                  src={photoPreview}
-                  alt="Preview produk"
+                  src={photoPreviews[selectedIndex]}
+                  alt={`Preview produk ${selectedIndex + 1}`}
                   onClick={() => setIsImageFullscreen(true)}
                 />
+              </div>
+
+              <div className="photoThumbnails">
+                {photoPreviews.map((preview, index) => (
+                  <div
+                    key={preview}
+                    className={`photoThumbnail ${
+                      selectedIndex === index ? "selected" : ""
+                    }`}
+                  >
+                    <img
+                      src={preview}
+                      alt={`Thumbnail ${index + 1}`}
+                      onClick={() => setSelectedIndex(index)}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(index)}
+                    >
+                      X
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="photoAddMore">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  + Tambah Foto
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleCamera}
+                >
+                  + Ambil Foto
+                </button>
               </div>
 
               {isImageFullscreen && (
@@ -361,7 +481,7 @@ const AddProductPhoto = ({ onClose }: Props) => {
                   onClick={() => setIsImageFullscreen(false)}
                 >
                   <img
-                    src={photoPreview}
+                    src={photoPreviews[selectedIndex]}
                     alt="Preview produk fullscreen"
                     onClick={(e) => e.stopPropagation()}
                   />
@@ -371,7 +491,22 @@ const AddProductPhoto = ({ onClose }: Props) => {
               <div className="formFooter formPhoto">
                 <div>
                   <p className="fileInfo">
-                    Nama File: <span className="fileName">{photo?.name}</span>
+                    Jumlah Foto:
+                    <span className="fileName">{photos.length}</span>
+                  </p>
+
+                  <p className="fileInfo">
+                    Ukuran Foto:
+                    <span className="fileName">
+                      {formatFileSize(photos[selectedIndex].size)}
+                    </span>
+                  </p>
+
+                  <p className="fileInfo">
+                    Foto Utama:
+                    <span className="fileName">
+                      {photos[selectedIndex]?.name}
+                    </span>
                   </p>
 
                   <div className="d-flex justify-content-end gap-2">

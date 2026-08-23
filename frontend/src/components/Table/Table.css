@@ -26,7 +26,7 @@
 
 .tableWrapper {
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
 } 
 
 .tableContainer {
@@ -90,10 +90,51 @@
   background-color: transparent;
 }
 
+.actionColumn {
+  text-align: end;
+}
+
 .actionTableWrapper {
   display: flex;
-  gap: 5px;
+  width: 180px;
+  justify-content: end;
+  gap: 10px;
 }
+
+.actionTableWrapper > button {
+  padding: .5rem .7rem;
+  border-radius: .5rem;
+  transition: all 0.3s;
+}
+
+.adjustButton {
+  background-color: #0259fc;
+  border: 1px solid white ;
+  color: white;
+}
+
+.historyButton {
+  background-color: white;
+  border: 1px solid black;
+  color: black;
+}
+
+.adjustButton:hover {
+  color: #0259fc;
+  border: 1px solid #0259fc;
+  background-color: white;
+}
+
+.historyButton:hover {
+  color: white;
+  background-color: 1px solid black;
+  background-color: rgb(15, 11, 11);
+}
+
+.actionTableWrapper > button:active {
+  opacity: 0.7;
+}
+
 
 @media screen and (max-width: 768px) {
   .searchContainer {
