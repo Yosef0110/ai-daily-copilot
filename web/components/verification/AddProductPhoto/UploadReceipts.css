@@ -522,6 +522,22 @@
 }
 
 @media (max-width: 768px) {
+  .formBody {
+    padding: .5rem;
+  }
+
+  .fileThumbnail {
+    height: 100px;
+  }
+
+  .filePreview {
+    height: 100%;
+  }
+
+  .fileName {
+    margin-top: 0 !important;
+  }
+
   .photoAddWrapper {
     flex-direction: column;
     
@@ -538,6 +554,12 @@
   
   .imageFullscreen {
     padding: 1rem;
+  }
+
+  .photoAddMore > button {
+    width: 100px;
+    height: 75px;
+    padding: 0;
   }
 }
 
