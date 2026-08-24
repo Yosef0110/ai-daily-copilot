@@ -144,61 +144,24 @@ if (supabaseStatus.status !== 0) {
 
 console.log("\nStarting Next.js and FastAPI...\n");
 
-const npmCommand =
-  process.platform === "win32" ? "npm.cmd" : "npm";
+const concurrentlyBin =
+  process.platform === "win32"
+    ? path.join(ROOT, "node_modules", ".bin", "concurrently.cmd")
+    : path.join(ROOT, "node_modules", ".bin", "concurrently");
 
-const nextProcess = spawn(
-  npmCommand,
-  ["--prefix", "web", "run", "dev"],
+const child = spawn(
+  concurrentlyBin,
+  [
+    "npm --prefix web run dev",
+    "cd ai-service && python -m uvicorn app.main:app --reload --port 8000",
+  ],
   {
     cwd: ROOT,
     stdio: "inherit",
-    shell: false,
+    shell: true,
   },
 );
 
-const fastApiProcess = spawn(
-  pythonCommand,
-  [
-    "-m",
-    "uvicorn",
-    "app.main:app",
-    "--reload",
-    "--port",
-    "8000",
-  ],
-  {
-    cwd: path.join(ROOT, "ai-service"),
-    stdio: "inherit",
-    shell: false,
-  },
-);
-
-function shutdown() {
-  console.log("\nStopping development servers...");
-
-  if (!nextProcess.killed) {
-    nextProcess.kill("SIGTERM");
-  }
-
-  if (!fastApiProcess.killed) {
-    fastApiProcess.kill("SIGTERM");
-  }
-
-  process.exit(0);
-}
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-nextProcess.on("exit", (code) => {
-  if (code !== null && code !== 0) {
-    console.error(`Next.js exited with code ${code}`);
-  }
-});
-
-fastApiProcess.on("exit", (code) => {
-  if (code !== null && code !== 0) {
-    console.error(`FastAPI exited with code ${code}`);
-  }
+child.on("exit", (code) => {
+  process.exit(code ?? 0);
 });
