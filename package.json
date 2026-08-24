@@ -1,0 +1,10 @@
+{
+  "name": "ai-daily-copilot",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix web run dev\" \"cd ai-service && python -m uvicorn app.main:app --reload --port 8000\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

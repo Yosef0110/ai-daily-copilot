@@ -16,6 +16,10 @@ const navigation = [
     href: "/inventory",
     label: "Inventory",
   },
+  {
+    href: "/forecast",
+    label: "Forecasting",
+  }
 ];
 
 export function AppSidebar() {
