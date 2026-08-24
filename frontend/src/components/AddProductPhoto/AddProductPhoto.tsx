@@ -4,6 +4,7 @@ import Toast from "../Toast/Toast.tsx";
 import Button from "../Button/Button";
 import FolderIcon from "../Icons/FolderIcon";
 import CameraIcon from "../Icons/CameraIcon";
+import type { ToastType } from "../../pages/AddProductPage.tsx";
 
 interface Props {
   onClose: () => void;
@@ -41,8 +42,13 @@ const AddProductPhoto = ({ onClose }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [showToast, setToastVisibility] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-
+  const [toastInfo, setToastInfo] = useState<{
+    message: string;
+    status: ToastType;
+  }>({
+    message: "",
+    status: "info",
+  });
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
 
@@ -52,8 +58,10 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
     files.forEach((file) => {
       if (file.size > MAX_FILE_SIZE) {
-        setToastMessage(`${file.name} terlalu besar. Maksimal 5 MB.`);
-
+        setToastInfo({
+          message: `${file.name} terlalu besar. Maksimal 5 MB.`,
+          status: "warning",
+        });
         setToastVisibility(true);
 
         return;
@@ -106,8 +114,10 @@ const AddProductPhoto = ({ onClose }: Props) => {
 
   const openDesktopCamera = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setToastMessage("Browser ini tidak mendukung akses kamera.");
-
+      setToastInfo({
+        message: `Browser ini tidak mendukung akses kamera.`,
+        status: "info",
+      });
       setToastVisibility(true);
       return;
     }
@@ -124,9 +134,10 @@ const AddProductPhoto = ({ onClose }: Props) => {
       setShowCamera(true);
     } catch (error) {
       console.error("Gagal membuka kamera:", error);
-
-      setToastMessage("Kamera tidak tersedia atau izin kamera ditolak.");
-
+      setToastInfo({
+        message: `Kamera tidak tersedia atau izin kamera ditolak.`,
+        status: "danger",
+      });
       setToastVisibility(true);
     }
   };
@@ -137,8 +148,10 @@ const AddProductPhoto = ({ onClose }: Props) => {
     if (!video) return;
 
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      setToastMessage("Kamera belum siap. Coba lagi.");
-
+      setToastInfo({
+        message: `Kamera belum siap. Coba lagi..`,
+        status: "info",
+      });
       setToastVisibility(true);
       return;
     }
@@ -238,6 +251,58 @@ const AddProductPhoto = ({ onClose }: Props) => {
     }, 5000);
   };
 
+  const handleOCR = async () => {
+    if (photos.length === 0) {
+      setToastInfo({
+        message: "Silakan pilih minimal satu gambar.",
+        status: "warning",
+      });
+      setToastVisibility(true);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+
+      photos.forEach((photo) => {
+        formData.append("images", photo);
+      });
+
+      const response = await fetch("/api/ocr", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`OCR gagal: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      console.log("OCR Result:", result);
+
+      setToastInfo({
+        message: "Gambar berhasil diproses OCR.",
+        status: "success",
+      });
+
+      setToastVisibility(true);
+    } catch (error) {
+      console.error("OCR Error:", error);
+
+      setToastInfo({
+        message: "Gagal memproses gambar.",
+        status: "danger",
+      });
+
+      setToastVisibility(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -314,7 +379,7 @@ const AddProductPhoto = ({ onClose }: Props) => {
         visible={showToast}
         onClose={() => setToastVisibility(false)}
       >
-        {toastMessage}
+        {toastInfo.message}
       </Toast>
       <div className="loading-container" hidden={!isSubmitting}>
         <div className="spinner-border" role="status">
@@ -492,20 +557,20 @@ const AddProductPhoto = ({ onClose }: Props) => {
                 <div>
                   <p className="fileInfo">
                     Jumlah Foto:
-                    <span className="fileName">{photos.length}</span>
+                    <span className="fileName"> {photos.length}</span>
                   </p>
 
                   <p className="fileInfo">
                     Ukuran Foto:
                     <span className="fileName">
-                      {formatFileSize(photos[selectedIndex].size)}
+                      {" " + formatFileSize(photos[selectedIndex].size)}
                     </span>
                   </p>
 
                   <p className="fileInfo">
                     Foto Utama:
                     <span className="fileName">
-                      {photos[selectedIndex]?.name}
+                      {" " + photos[selectedIndex]?.name}
                     </span>
                   </p>
 
