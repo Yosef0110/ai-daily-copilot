@@ -7,8 +7,6 @@ openpyxl
 pillow
 rapidfuzz
 scikit-learn
-
-# routers/imports.py + services/receipt_extraction.py: reading struk
-# photos via Gemini's multimodal API.
-google-genai
-python-dotenv
+numpy
+statsmodels
+pmdarima

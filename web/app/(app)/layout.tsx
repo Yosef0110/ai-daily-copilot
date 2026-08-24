@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { Topbar } from "@/components/layout/topbar";
 
 export default function AppLayout({
   children,
@@ -12,6 +13,8 @@ export default function AppLayout({
         <AppSidebar />
 
         <div className="min-w-0 flex-1 pb-16 md:pb-0">
+          <Topbar />
+
           {children}
         </div>
       </div>

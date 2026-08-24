@@ -22,11 +22,11 @@ begin;
 -- Indomie : 33333333-3333-4333-8333-333333333331
 -- Aqua    : 33333333-3333-4333-8333-333333333332
 -- Gula    : 33333333-3333-4333-8333-333333333333
+-- Kopi    : 33333333-3333-4333-8333-333333333334
+-- Teh     : 33333333-3333-4333-8333-333333333335
 --
--- Transactions:
--- Sale 1   : 44444444-4444-4444-4444-444444444441
--- Sale 2   : 44444444-4444-4444-4444-444444444442
--- Purchase : 44444444-4444-4444-4444-444444444443
+-- Purchase transaction:
+-- 44444444-4444-4444-4444-444444444443
 
 
 -- ============================================================
@@ -41,6 +41,10 @@ insert into auth.users (
   email,
   encrypted_password,
   email_confirmed_at,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change,
   created_at,
   updated_at,
   raw_app_meta_data,
@@ -54,10 +58,45 @@ values (
   'demo@aidailycopilot.local',
   crypt('demo123456', gen_salt('bf')),
   now(),
+  '',
+  '',
+  '',
+  '',
   now(),
   now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
   '{"full_name":"Demo Owner"}'::jsonb
+);
+
+
+-- ============================================================
+-- 1B. DEMO AUTH IDENTITY
+-- ============================================================
+
+insert into auth.identities (
+  id,
+  user_id,
+  provider_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+values (
+  gen_random_uuid(),
+  '11111111-1111-1111-1111-111111111111',
+  '11111111-1111-1111-1111-111111111111',
+  jsonb_build_object(
+    'sub', '11111111-1111-1111-1111-111111111111',
+    'email', 'demo@aidailycopilot.local',
+    'email_verified', true,
+    'phone_verified', false
+  ),
+  'email',
+  now(),
+  now(),
+  now()
 );
 
 
@@ -83,11 +122,6 @@ values (
 
 -- ============================================================
 -- 3. PRODUCTS
---
--- Final stock:
--- Indomie = 70
--- Aqua    = 35
--- Gula    = 17
 -- ============================================================
 
 insert into products (
@@ -127,7 +161,7 @@ values
     'Minuman',
     'botol',
     4000,
-    35,
+    55,
     8,
     6,
     2,
@@ -141,10 +175,38 @@ values
     'Sembako',
     'pack',
     18000,
-    17,
+    30,
     5,
     4,
     3,
+    true
+  ),
+  (
+    '33333333-3333-4333-8333-333333333334',
+    '22222222-2222-2222-2222-222222222222',
+    'KOP-001',
+    'Kopi ABC Susu',
+    'Minuman',
+    'sachet',
+    2500,
+    45,
+    10,
+    8,
+    2,
+    true
+  ),
+  (
+    '33333333-3333-4333-8333-333333333335',
+    '22222222-2222-2222-2222-222222222222',
+    'TEH-001',
+    'Teh Botol Sosro 450ml',
+    'Minuman',
+    'botol',
+    6000,
+    40,
+    8,
+    6,
+    2,
     true
   );
 
@@ -178,16 +240,21 @@ values
     '33333333-3333-4333-8333-333333333333',
     'Gula 1kg',
     'manual'
+  ),
+  (
+    '33333333-3333-4333-8333-333333333334',
+    'Kopi ABC',
+    'manual'
+  ),
+  (
+    '33333333-3333-4333-8333-333333333335',
+    'Teh Sosro',
+    'manual'
   );
 
 
 -- ============================================================
--- 5. FIRST SALE TRANSACTION
---
--- Indomie: 5 × 3,500  = 17,500
--- Aqua   : 5 × 4,000  = 20,000
--- Gula   : 2 × 18,000 = 36,000
--- Total                  73,500
+-- 5. 30-DAY HISTORICAL SALES DATA
 -- ============================================================
 
 insert into transactions (
@@ -198,14 +265,19 @@ insert into transactions (
   total_amount,
   source
 )
-values (
-  '44444444-4444-4444-4444-444444444441',
+select
+  gen_random_uuid(),
   '22222222-2222-2222-2222-222222222222',
   'sale',
-  now() - interval '2 days',
-  73500,
+  current_date - day_offset,
+  0,
   'seed'
-);
+from generate_series(1, 30) as day_offset;
+
+
+-- ============================================================
+-- 6. HISTORICAL SALE ITEMS
+-- ============================================================
 
 insert into transaction_items (
   transaction_id,
@@ -214,93 +286,64 @@ insert into transaction_items (
   unit_price,
   subtotal
 )
-values
-  (
-    '44444444-4444-4444-4444-444444444441',
-    '33333333-3333-4333-8333-333333333331',
-    5,
-    3500,
-    17500
-  ),
-  (
-    '44444444-4444-4444-4444-444444444441',
-    '33333333-3333-4333-8333-333333333332',
-    5,
-    4000,
-    20000
-  ),
-  (
-    '44444444-4444-4444-4444-444444444441',
-    '33333333-3333-4333-8333-333333333333',
-    2,
-    18000,
-    36000
-  );
+select
+  t.id,
+  p.product_id,
+  p.quantity,
+  p.unit_price,
+  p.quantity * p.unit_price
+from transactions t
+cross join lateral (
+  values
+    (
+      '33333333-3333-4333-8333-333333333331'::uuid,
+      (5 + extract(day from t.transaction_date)::int % 6)::numeric,
+      3500::numeric
+    ),
+    (
+      '33333333-3333-4333-8333-333333333332'::uuid,
+      (4 + extract(day from t.transaction_date)::int % 5)::numeric,
+      4000::numeric
+    ),
+    (
+      '33333333-3333-4333-8333-333333333333'::uuid,
+      (2 + extract(day from t.transaction_date)::int % 4)::numeric,
+      18000::numeric
+    ),
+    (
+      '33333333-3333-4333-8333-333333333334'::uuid,
+      (6 + extract(day from t.transaction_date)::int % 7)::numeric,
+      2500::numeric
+    ),
+    (
+      '33333333-3333-4333-8333-333333333335'::uuid,
+      (3 + extract(day from t.transaction_date)::int % 6)::numeric,
+      6000::numeric
+    )
+) as p(product_id, quantity, unit_price)
+where t.transaction_type = 'sale'
+  and t.source = 'seed';
 
 
 -- ============================================================
--- 6. SECOND SALE TRANSACTION
---
--- Indomie: 7 × 3,500  = 24,500
--- Aqua   : 5 × 4,000  = 20,000
--- Gula   : 1 × 18,000 = 18,000
--- Total                  62,500
+-- 6B. UPDATE SALE TRANSACTION TOTALS
 -- ============================================================
 
-insert into transactions (
-  id,
-  business_id,
-  transaction_type,
-  transaction_date,
-  total_amount,
-  source
-)
-values (
-  '44444444-4444-4444-4444-444444444442',
-  '22222222-2222-2222-2222-222222222222',
-  'sale',
-  now() - interval '1 day',
-  62500,
-  'seed'
-);
-
-insert into transaction_items (
-  transaction_id,
-  product_id,
-  quantity,
-  unit_price,
-  subtotal
-)
-values
-  (
-    '44444444-4444-4444-4444-444444444442',
-    '33333333-3333-4333-8333-333333333331',
-    7,
-    3500,
-    24500
-  ),
-  (
-    '44444444-4444-4444-4444-444444444442',
-    '33333333-3333-4333-8333-333333333332',
-    5,
-    4000,
-    20000
-  ),
-  (
-    '44444444-4444-4444-4444-444444444442',
-    '33333333-3333-4333-8333-333333333333',
-    1,
-    18000,
-    18000
-  );
+update transactions t
+set total_amount = totals.total_amount
+from (
+  select
+    transaction_id,
+    sum(subtotal) as total_amount
+  from transaction_items
+  group by transaction_id
+) totals
+where t.id = totals.transaction_id
+  and t.transaction_type = 'sale';
 
 
 -- ============================================================
 -- 7. PURCHASE TRANSACTION
---
--- Indomie: 32 × 3,000 = 96,000
--- Aqua   : 5 × 1,800  =  9,000
--- Total                  105,000
 -- ============================================================
 
 insert into transactions (
@@ -365,152 +408,66 @@ values
     '22222222-2222-2222-2222-222222222222',
     '33333333-3333-4333-8333-333333333331',
     'manual_correction',
-    50,
+    70,
     0,
-    50,
+    70,
     'seed',
     'Initial stock',
     'Stok awal untuk data demo',
-    now() - interval '3 days'
+    now() - interval '31 days'
   ),
   (
     '22222222-2222-2222-2222-222222222222',
     '33333333-3333-4333-8333-333333333332',
     'manual_correction',
-    40,
+    55,
     0,
-    40,
+    55,
     'seed',
     'Initial stock',
     'Stok awal untuk data demo',
-    now() - interval '3 days'
+    now() - interval '31 days'
   ),
   (
     '22222222-2222-2222-2222-222222222222',
     '33333333-3333-4333-8333-333333333333',
     'manual_correction',
-    20,
-    0,
-    20,
-    'seed',
-    'Initial stock',
-    'Stok awal untuk data demo',
-    now() - interval '3 days'
-  );
-
-
--- ============================================================
--- 9. INVENTORY MOVEMENTS FROM FIRST SALE
--- ============================================================
-
-insert into inventory_movements (
-  business_id,
-  product_id,
-  movement_type,
-  quantity_change,
-  stock_before,
-  stock_after,
-  reference_type,
-  reference_id,
-  reason,
-  created_at
-)
-values
-  (
-    '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333331',
-    'sale',
-    -5,
-    50,
-    45,
-    'transaction',
-    '44444444-4444-4444-4444-444444444441',
-    'Seed sale transaction',
-    now() - interval '2 days'
-  ),
-  (
-    '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333332',
-    'sale',
-    -5,
-    40,
-    35,
-    'transaction',
-    '44444444-4444-4444-4444-444444444441',
-    'Seed sale transaction',
-    now() - interval '2 days'
-  ),
-  (
-    '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333333',
-    'sale',
-    -2,
-    20,
-    18,
-    'transaction',
-    '44444444-4444-4444-4444-444444444441',
-    'Seed sale transaction',
-    now() - interval '2 days'
-  );
-
-
--- ============================================================
--- 10. INVENTORY MOVEMENTS FROM SECOND SALE
--- ============================================================
-
-insert into inventory_movements (
-  business_id,
-  product_id,
-  movement_type,
-  quantity_change,
-  stock_before,
-  stock_after,
-  reference_type,
-  reference_id,
-  reason,
-  created_at
-)
-values
-  (
-    '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333331',
-    'sale',
-    -7,
-    45,
-    38,
-    'transaction',
-    '44444444-4444-4444-4444-444444444442',
-    'Seed sale transaction',
-    now() - interval '1 day'
-  ),
-  (
-    '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333332',
-    'sale',
-    -5,
-    35,
     30,
-    'transaction',
-    '44444444-4444-4444-4444-444444444442',
-    'Seed sale transaction',
-    now() - interval '1 day'
+    0,
+    30,
+    'seed',
+    'Initial stock',
+    'Stok awal untuk data demo',
+    now() - interval '31 days'
   ),
   (
     '22222222-2222-2222-2222-222222222222',
-    '33333333-3333-4333-8333-333333333333',
-    'sale',
-    -1,
-    18,
-    17,
-    'transaction',
-    '44444444-4444-4444-4444-444444444442',
-    'Seed sale transaction',
-    now() - interval '1 day'
+    '33333333-3333-4333-8333-333333333334',
+    'manual_correction',
+    45,
+    0,
+    45,
+    'seed',
+    'Initial stock',
+    'Stok awal untuk data demo',
+    now() - interval '31 days'
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    '33333333-3333-4333-8333-333333333335',
+    'manual_correction',
+    40,
+    0,
+    40,
+    'seed',
+    'Initial stock',
+    'Stok awal untuk data demo',
+    now() - interval '31 days'
   );
 
 
 -- ============================================================
--- 11. INVENTORY MOVEMENTS FROM PURCHASE
+-- 9. INVENTORY MOVEMENT FROM PURCHASE
 -- ============================================================
 
 insert into inventory_movements (
@@ -543,8 +500,8 @@ values
     '33333333-3333-4333-8333-333333333332',
     'purchase',
     5,
-    30,
-    35,
+    50,
+    55,
     'transaction',
     '44444444-4444-4444-4444-444444444443',
     'Seed purchase transaction',
