@@ -309,7 +309,7 @@ export default function ImportsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 p-8 text-slate-900">
+    <main className="min-h-screen bg-slate-100 p-8 text-slate-900 flex flex-col gap-10">
       <Toast
         type={toast.type}
         visible={toast.visible}
@@ -320,7 +320,7 @@ export default function ImportsPage() {
 
       <div className="mx-auto max-w-7xl space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">Import Struk &amp; Excel</h1>
+          <h2 className="text-3xl font-bold">Import Struk &amp; Excel</h2>
           <p className="mt-2 text-slate-600">
             Unggah foto struk atau file excel/csv - AI akan membaca dan
             mencocokkan ke produk yang sudah ada. Semua hasil di bawah masih
@@ -482,7 +482,11 @@ export default function ImportsPage() {
           )}
         </section>
       </div>
-      <Table HeaderProps={COLUMNS} data={MOCK_DATA}/>
+        
+      <div> 
+        <h2 className="text-3xl font-bold mb-5">Informasi Product: </h2>
+        <Table HeaderProps={COLUMNS} data={MOCK_DATA}/>
+      </div>
     </main>
 
   );

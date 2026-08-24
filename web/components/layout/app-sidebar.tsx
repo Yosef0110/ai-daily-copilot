@@ -19,7 +19,7 @@ const navigation = [
   {
     href: "/forecast",
     label: "Forecasting",
-  }
+  },
   {
     href: "/imports",
     label: "Imports"
