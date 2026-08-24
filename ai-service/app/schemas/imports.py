@@ -105,6 +105,7 @@ class SimplifiedTransaction(BaseModel):
     transaction_time: Optional[str] = None
     imported_at: str  # ISO 8601 UTC timestamp - when THIS import ran, not the transaction date
     source: Literal["ocr", "excel", "csv", "manual"]
+    engine: Literal["gemini", "mineru", "excel"]  # which pipeline actually produced this result - "gemini"/"mineru" for struk (mirrors RECEIPT_BACKEND at the moment this ran), "excel" for the Excel/CSV importer (no LLM backend choice there). Added so the JSON itself always shows which struk backend ran, instead of having to cross-check /health separately.
     source_file: str
     total_amount: float
     items: list[SimplifiedItem]

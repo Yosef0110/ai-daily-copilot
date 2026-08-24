@@ -19,6 +19,7 @@ through as JSON.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import mimetypes
 import zipfile
@@ -34,6 +35,7 @@ from app.schemas.imports import (
     ReceiptImportResult,
 )
 from app.services.excel_import import preview_excel_import
+from app.services.progress import snapshot as progress_snapshot
 from app.services.receipt_extraction import extract_receipt
 
 router = APIRouter(prefix="/imports", tags=["imports"])
@@ -77,7 +79,7 @@ def _guess_mime(filename: str, content_type: Optional[str]) -> Optional[str]:
     return guessed if guessed in _ALLOWED_RECEIPT_MIME else None
 
 
-def _process_one(
+async def _process_one(
     data: bytes,
     filename: str,
     mime_type: str,
@@ -87,12 +89,20 @@ def _process_one(
     errors: list[ReceiptImportError],
 ) -> None:
     try:
-        results.append(extract_receipt(data, mime_type, filename, candidates, transaction_type))
+        # extract_receipt() is a blocking call (MinerU is a subprocess,
+        # Ollama/Gemini are blocking HTTP calls) - run it in a worker
+        # thread via asyncio.to_thread so it doesn't block this async
+        # endpoint's event loop. Without this, GET /imports/progress
+        # (which the frontend polls WHILE this is running) would never
+        # get a response until the whole receipt finished processing -
+        # defeating the point of a live progress indicator.
+        result = await asyncio.to_thread(extract_receipt, data, mime_type, filename, candidates, transaction_type)
+        results.append(result)
     except RuntimeError as exc:
         errors.append(ReceiptImportError(source_file=filename, message=str(exc)))
 
 
-def _process_zip(
+async def _process_zip(
     data: bytes,
     zip_name: str,
     candidates: list[dict],
@@ -122,7 +132,7 @@ def _process_zip(
             found_any = True
             mime_type = _guess_mime(base_name, None) or "application/octet-stream"
             entry_bytes = archive.read(entry)
-            _process_one(
+            await _process_one(
                 entry_bytes,
                 f"{zip_name}/{base_name}",
                 mime_type,
@@ -138,6 +148,24 @@ def _process_zip(
                     message="Tidak ada foto struk (.jpg/.png/.webp/.pdf) yang ditemukan di dalam .zip ini.",
                 )
             )
+
+
+@router.get("/progress")
+async def import_progress() -> dict:
+    """Polled by web/app/imports/page.tsx (every ~1s) while a receipt
+    upload is in flight, so the page can show which file is being
+    processed and which stage it's at (MinerU parsing, Ollama reshape,
+    Gemini call, product matching) instead of a bare spinner - a struk
+    batch through MinerU+Ollama on a rented GPU can genuinely take a
+    minute or more, especially the first call after the model hasn't
+    been loaded onto the GPU yet.
+
+    Shape: {"<source_file>": "<stage text in Indonesian>", ...} - empty
+    dict when nothing is currently processing. Keyed by filename rather
+    than a job id since this project processes one person's batch at a
+    time (see services/progress.py's docstring for why that's an
+    intentional simplification, not an oversight)."""
+    return progress_snapshot()
 
 
 @router.post("/receipt", response_model=ReceiptImportBatchResult)
@@ -165,7 +193,7 @@ async def import_receipt(
             continue
 
         if _looks_like_zip(filename, file.content_type):
-            _process_zip(data, filename, candidates, transaction_type, results, errors)
+            await _process_zip(data, filename, candidates, transaction_type, results, errors)
             continue
 
         mime_type = _guess_mime(filename, file.content_type)
@@ -179,7 +207,7 @@ async def import_receipt(
             )
             continue
 
-        _process_one(data, filename, mime_type, candidates, transaction_type, results, errors)
+        await _process_one(data, filename, mime_type, candidates, transaction_type, results, errors)
 
     return ReceiptImportBatchResult(results=results, errors=errors)
 

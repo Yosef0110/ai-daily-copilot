@@ -12,3 +12,11 @@ scikit-learn
 # photos via Gemini's multimodal API.
 google-genai
 python-dotenv
+requests
+
+# Optional: only needed when RECEIPT_BACKEND=mineru (struk -> MinerU ->
+# markdown -> Qwen via Ollama, instead of Gemini reading the photo
+# directly). Not installed by this file's default `pip install -r
+# requirements.txt` - install separately when you actually want this
+# path: pip install -U "mineru[all]"
+# mineru[all]

@@ -172,6 +172,6 @@ def preview_excel_import(file_bytes: bytes, filename: str, product_candidates: l
         unmatched_columns=unmatched,
         sample_rows=df.head(5).fillna("").to_dict(orient="records"),
         drafts=drafts,
-        simplified=simplify_transaction(summary_draft, filename),
+        simplified=simplify_transaction(summary_draft, filename, engine="excel"),
         warnings=warnings,
     )

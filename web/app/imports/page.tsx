@@ -16,7 +16,7 @@
  * ini terasa satu tema dengan punya tim, bukan tempelan.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Toast } from "@/components/shared/toast";
 
@@ -59,6 +59,11 @@ type SimplifiedTransaction = {
   transaction_time: string | null;
   imported_at: string;
   source: string;
+  // Which pipeline actually produced this result: "gemini" or "mineru" for
+  // a struk photo (mirrors ai-service's RECEIPT_BACKEND at the moment this
+  // ran), "excel" for the Excel/CSV importer. Lets a person tell which
+  // backend ran straight from the JSON, without checking /health.
+  engine: "gemini" | "mineru" | "excel";
   source_file: string;
   total_amount: number;
   items: SimplifiedItem[];
@@ -146,6 +151,12 @@ export default function ImportsPage() {
     useState<ReceiptImportBatchResult | null>(null);
   const [isLoadingExcel, setIsLoadingExcel] = useState(false);
   const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  // "sedang di tahap apa sekarang" - polled from GET /imports/progress
+  // while isLoadingReceipt is true (see the useEffect below). Shape
+  // matches ai-service's services/progress.py: {source_file: stage}.
+  const [receiptProgress, setReceiptProgress] = useState<
+    Record<string, string>
+  >({});
   const [toast, setToast] = useState<ToastState>({
     visible: false,
     type: "info",
@@ -155,6 +166,45 @@ export default function ImportsPage() {
   function showToast(type: ToastState["type"], message: string) {
     setToast({ visible: true, type, message });
   }
+
+  // Polls GET /imports/progress every 1s while a receipt upload is in
+  // flight, so the person watching the page sees which file/stage is
+  // running right now (MinerU parsing, Ollama reshape on the rented
+  // GPU, Gemini call, product matching) instead of just a static
+  // "Membaca..." button with no sense of how long is left. Stops
+  // polling as soon as isLoadingReceipt goes false (upload finished or
+  // failed) - ai-service clears its side of this the moment each file
+  // is done, so a stale stage never lingers past that.
+  const isLoadingReceiptRef = useRef(isLoadingReceipt);
+  isLoadingReceiptRef.current = isLoadingReceipt;
+
+  useEffect(() => {
+    if (!isLoadingReceipt) {
+      setReceiptProgress({});
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${AI_SERVICE_URL}/imports/progress`);
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as Record<string, string>;
+        if (!cancelled) setReceiptProgress(data);
+      } catch {
+        // Polling failure isn't worth surfacing as an error toast - the
+        // main upload request's own error handling covers real
+        // failures; this is just a "nice to see" indicator.
+      }
+    };
+    void poll();
+    const interval = setInterval(() => {
+      if (isLoadingReceiptRef.current) void poll();
+    }, 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isLoadingReceipt]);
 
   async function handleExcelUpload(file: File) {
     setIsLoadingExcel(true);
@@ -363,6 +413,26 @@ export default function ImportsPage() {
             </label>
           </div>
 
+          {isLoadingReceipt && (
+            <div className="mt-4 space-y-1.5 rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              {Object.keys(receiptProgress).length === 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                  <span>Menyiapkan...</span>
+                </div>
+              ) : (
+                Object.entries(receiptProgress).map(([file, stage]) => (
+                  <div key={file} className="flex items-start gap-2">
+                    <span className="mt-1 inline-block h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-blue-500" />
+                    <span>
+                      <span className="font-medium">{file}</span>: {stage}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
           {receiptBatch && (
             <div className="mt-6 space-y-6">
               {receiptBatch.errors.length > 0 && (
@@ -447,8 +517,20 @@ function SimplifiedJsonBlock({
         onClick={() => setExpanded((current) => !current)}
         className="flex w-full items-center justify-between px-4 py-2 text-left text-sm font-medium text-slate-700"
       >
-        <span>
+        <span className="flex items-center gap-2">
           JSON siap-integrasi (order_id: {data.order_id})
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+              data.engine === "mineru"
+                ? "bg-purple-100 text-purple-700"
+                : data.engine === "gemini"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-slate-200 text-slate-700"
+            }`}
+            title="Pipeline yang menghasilkan JSON ini"
+          >
+            {data.engine}
+          </span>
         </span>
         <span className="text-xs text-blue-600 hover:underline">
           {expanded ? "Sembunyikan" : "Lihat JSON"}

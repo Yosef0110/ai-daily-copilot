@@ -48,7 +48,7 @@ def _make_order_id(source_file: str, transaction_date: Optional[str]) -> str:
     return f"ORD-{digest}"
 
 
-def simplify_transaction(draft: TransactionDraft, source_file: str) -> SimplifiedTransaction:
+def simplify_transaction(draft: TransactionDraft, source_file: str, engine: str) -> SimplifiedTransaction:
     date_part, time_part = _split_date_time(draft.transaction_date)
 
     items = [
@@ -76,6 +76,7 @@ def simplify_transaction(draft: TransactionDraft, source_file: str) -> Simplifie
         transaction_time=time_part,
         imported_at=datetime.now(timezone.utc).isoformat(),
         source=draft.source,
+        engine=engine,
         source_file=source_file,
         total_amount=draft.total_amount,
         items=items,
