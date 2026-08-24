@@ -16,13 +16,13 @@
  * ini terasa satu tema dengan punya tim, bukan tempelan.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import UploadReceipts from "@/components/verification/AddProductPhoto/UploadReceipts";
 
 import { Toast } from "@/components/shared/toast";
 import Table from "@/components/verification/Table/Table";
 import StatusCell from "@/components/verification/TableUtility/StatusCell";
-import MOCK_DATA from "@/components/verification/Table/MOCK_DATA.json";
+
 
 
 const COLUMNS = [
@@ -169,6 +169,19 @@ type ToastState = {
   message: string;
 };
 
+type ProductTableItem = {
+  id: string;
+  name: string;
+  SKU: string;
+  current_stock: number;
+  selling_price: number;
+  minimum_stock: number;
+  safety_stock: number;
+  status: number;
+  created_at: string;
+  updated_at: string;
+};
+
 // ai-service jalan terpisah dari Next.js (lihat ai-service/README kalau
 // ada, atau AI_PIPELINE.md) - default port 8000 saat dev lokal.
 const AI_SERVICE_URL =
@@ -205,9 +218,81 @@ export default function ImportsPage() {
     message: "",
   });
 
+  const [products, setProducts] = useState<ProductTableItem[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+
   function showToast(type: ToastState["type"], message: string) {
     setToast({ visible: true, type, message });
   }
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        setIsLoadingProducts(true);
+
+        const response = await fetch("/api/products?is_active=true&limit=100");
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(
+            result.message ?? "Gagal mengambil data produk",
+          );
+        }
+
+        const mappedProducts: ProductTableItem[] = result.data.map(
+          (product: any) => {
+            const currentStock = Number(product.current_stock);
+            const minimumStock = Number(product.minimum_stock);
+            const safetyStock = Number(product.safety_stock);
+
+            let status = 2;
+
+            if (currentStock <= 0) {
+              status = 0;
+            } else if (
+              currentStock <= minimumStock ||
+              currentStock <= safetyStock
+            ) {
+              status = 1;
+            }
+
+            return {
+              id: product.id,
+              name: product.name,
+              SKU: product.sku,
+              current_stock: currentStock,
+              selling_price: Number(product.selling_price),
+              minimum_stock: minimumStock,
+              safety_stock: safetyStock,
+              status,
+              created_at: new Date(product.created_at).toLocaleDateString(
+                "id-ID",
+              ),
+              updated_at: new Date(product.updated_at).toLocaleDateString(
+                "id-ID",
+              ),
+            };
+          },
+        );
+
+        setProducts(mappedProducts);
+      } catch (error) {
+        console.error("Failed to load products:", error);
+
+        showToast(
+          "danger",
+          error instanceof Error
+            ? error.message
+            : "Gagal mengambil data produk",
+        );
+      } finally {
+        setIsLoadingProducts(false);
+      }
+    }
+
+    void fetchProducts();
+  }, []);
 
   function handleClose() {
     setPhotoModal(false);
@@ -415,8 +500,11 @@ export default function ImportsPage() {
             </label>
 
             {photoModal && (
-              <div className="formAddWrapper">
-                <UploadReceipts onClose={handleClose}  onSubmit={handleReceiptUpload}/>
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40">
+                <UploadReceipts
+                  onClose={handleClose}
+                  onSubmit={handleReceiptUpload}
+                />
               </div>
             )}
           </div>
@@ -485,7 +573,17 @@ export default function ImportsPage() {
         
       <div className="mx-auto w-full max-w-7xl "> 
         <h2 className="text-3xl font-bold mb-5">Informasi Product: </h2>
-        <Table HeaderProps={COLUMNS} data={MOCK_DATA}/>
+        {isLoadingProducts ? (
+          <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">
+            Memuat data produk...
+          </div>
+        ) : (
+          <Table
+            HeaderProps={COLUMNS}
+            data={products}
+            withAction={false}
+          />
+        )}
       </div>
     </main>
 

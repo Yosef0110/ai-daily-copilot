@@ -22,7 +22,7 @@ const navigation = [
   },
   {
     href: "/imports",
-    label: "Imports"
+    label: "Upload Data"
   }
 ];
 
