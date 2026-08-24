@@ -129,7 +129,6 @@ const Table = ({
     }
   };
 
-  console.log(columnFilters);
   return (
     <>
       <div className="mx-auto w-full max-w-7xl px-4 tableContainer">
@@ -149,7 +148,7 @@ const Table = ({
             />
           )}
         </div>
-        
+
         <div>
           <div className="tableWrapper w-full overflow-x-auto">
             <table className="w-full border-collapse text-left">
@@ -160,54 +159,62 @@ const Table = ({
                       #
                     </th>
 
-                    {headerGroup.headers.map((header) => (
-                      <th
-                        scope="col"
-                        key={header.id}
-                        className="px-4 py-3"
-                        style={{
-                          width: `${header.getSize()}px`,
-                          position: "relative",
-                        }}
-                      >
-                        {header.isPlaceholder ? null : (
+                    {headerGroup.headers.map((header) => {
+                      const isResizing = header.column.getIsResizing();
+
+                      const isAnotherColumnResizing = headerGroup.headers.some(
+                        (otherHeader) => otherHeader.column.getIsResizing(),
+                      );
+
+                      return (
+                        <th
+                          scope="col"
+                          key={header.id}
+                          className="px-4 py-3"
+                          style={{
+                            width: `${header.getSize()}px`,
+                            position: "relative",
+                          }}
+                        >
+                          {header.isPlaceholder ? null : (
+                            <div
+                              className={
+                                header.column.getCanSort()
+                                  ? "sortable-header flex cursor-pointer items-center gap-1"
+                                  : ""
+                              }
+                              onClick={header.column.getToggleSortingHandler()}
+                              title={
+                                header.column.getCanSort()
+                                  ? header.column.getNextSortingOrder() ===
+                                    "asc"
+                                    ? "Next: Sort ascending"
+                                    : header.column.getNextSortingOrder() ===
+                                        "desc"
+                                      ? "Next: Sort descending"
+                                      : "Next: Clear sort"
+                                  : undefined
+                              }
+                            >
+                              <table.FlexRender header={header} />
+
+                              {{
+                                asc: <UpArrow width={15} />,
+                                desc: <DownArrow width={15} />,
+                              }[header.column.getIsSorted() as string] ?? (
+                                <UpDownArrow width={15} />
+                              )}
+                            </div>
+                          )}
+
                           <div
-                            className={
-                              header.column.getCanSort()
-                                ? "sortable-header flex cursor-pointer items-center gap-1"
-                                : ""
-                            }
-                            onClick={header.column.getToggleSortingHandler()}
-                            title={
-                              header.column.getCanSort()
-                                ? header.column.getNextSortingOrder() === "asc"
-                                  ? "Next: Sort ascending"
-                                  : header.column.getNextSortingOrder() === "desc"
-                                    ? "Next: Sort descending"
-                                    : "Next: Clear sort"
-                                : undefined
-                            }
-                          >
-                            <table.FlexRender header={header} />
-
-                            {{
-                              asc: <UpArrow width={15} />,
-                              desc: <DownArrow width={15} />,
-                            }[header.column.getIsSorted() as string] ?? (
-                              <UpDownArrow width={15} />
-                            )}
-                          </div>
-                        )}
-
-                        <div
-                          className={`sizeHandler ${
-                            header.column.getIsResizing() ? "isResizing" : ""
-                          }`}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                        />
-                      </th>
-                    ))}
+                            className={`sizeHandler ${isResizing ? "isResizing" : ""} ${isAnotherColumnResizing && !isResizing ? "resizeDisabled" : ""}`}
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                          />
+                        </th>
+                      );
+                    })}
 
                     {withAction && (
                       <th
@@ -297,7 +304,7 @@ const Table = ({
                   focus:ring-1
                   focus:ring-slate-300
                   rounded-md"
-                  >
+                >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
