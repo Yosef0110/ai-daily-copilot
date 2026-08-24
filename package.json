@@ -2,7 +2,7 @@
   "name": "ai-daily-copilot",
   "private": true,
   "scripts": {
-    "dev": "./scripts/dev.sh"
+    "dev": "node scripts/dev.js"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"
