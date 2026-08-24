@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 
 type ToastType = "success" | "danger" | "warning" | "info";
 
+export type ToastState = {
+  visible: boolean;
+  type: ToastType;
+  message: string;
+};
+
 interface ToastProps {
   type?: ToastType;
   children: React.ReactNode;

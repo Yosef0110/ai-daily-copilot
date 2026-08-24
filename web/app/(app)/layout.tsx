@@ -12,7 +12,7 @@ export default function AppLayout({
       <div className="flex">
         <AppSidebar />
 
-        <div className="min-w-0 flex-1 pb-16 md:pb-0">
+        <div className="mainComponent min-w-0 flex-1 pb-16 md:pb-0 ml-[255]">
           <Topbar />
 
           {children}
