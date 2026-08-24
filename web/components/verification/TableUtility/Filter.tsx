@@ -32,20 +32,33 @@ const Filter = ({ setColumnFilters }: FilterProps) => {
 
   return (
     <>
-      <form className="filterSearch">
-        <label className="labelWillHidden">Sortir berdasarkan status</label>
-        <div className="form-group">
-          <select
-            className="form-control"
-            id="statusFilter"
-            onChange={handleStatusChange}
-          >
-            <option value="-">-</option>
-            <option value={2}>Stock Tersedia</option>
-            <option value={1}>Stock Menipis</option>
-            <option value={0}>Stock Habis</option>
-          </select>
-        </div>
+      <form className="w-full md:w-48">
+        <label htmlFor="statusFilter" className="labelWillHidden">
+          Sortir berdasarkan status
+        </label>
+
+        <select
+          id="statusFilter"
+          onChange={handleStatusChange}
+          className="rounded-md
+          border
+          border-slate-300
+          bg-white
+          px-3
+          py-2
+          text-sm
+          text-slate-700
+          outline-none
+          transition
+          focus:border-slate-400
+          focus:ring-0
+          w-full"
+        >
+          <option value="-">-</option>
+          <option value={2}>Stock Tersedia</option>
+          <option value={1}>Stock Menipis</option>
+          <option value={0}>Stock Habis</option>
+        </select>
       </form>
     </>
   );

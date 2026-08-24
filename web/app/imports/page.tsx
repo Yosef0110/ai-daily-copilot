@@ -17,8 +17,58 @@
  */
 
 import { useState } from "react";
+import UploadReceipts from "@/components/verification/AddProductPhoto/UploadReceipts";
 
 import { Toast } from "@/components/shared/toast";
+import Table from "@/components/verification/Table/Table";
+import StatusCell from "@/components/verification/TableUtility/StatusCell";
+import MOCK_DATA from "@/components/verification/Table/MOCK_DATA.json";
+
+
+const COLUMNS = [
+  {
+    header: "Nama Product",
+    accessorKey: "name",
+  },
+  // {
+  //   header: "Kategori Produk",
+  //   accessorKey: "category",
+  // },
+  {
+    header: "SKU",
+    accessorKey: "SKU",
+  },
+  // {
+  //   header: "Unit",
+  //   accessorKey: "unit",
+  // },
+  {
+    header: "Stok Tersisa",
+    accessorKey: "current_stock",
+    filterFn: "equalsNumber",
+  },
+  {
+    header: "Harga",
+    accessorKey: "selling_price",
+    filterFn: "equalsNumber",
+  },
+  {
+    header: "Status",
+    accessorKey: "status",
+    cell: StatusCell,
+    filterFn: "equalsNumber",
+    enableColumnSearch: false,
+  },
+  {
+    header: "Tanggal Dibuat",
+    accessorKey: "created_at",
+  },
+  {
+    header: "Update Terakhir",
+    accessorKey: "updated_at",
+  },
+];
+
 
 type ProductMatch = {
   matched_product_id: string | null;
@@ -145,7 +195,10 @@ export default function ImportsPage() {
   const [receiptBatch, setReceiptBatch] =
     useState<ReceiptImportBatchResult | null>(null);
   const [isLoadingExcel, setIsLoadingExcel] = useState(false);
+
   const [isLoadingReceipt, setIsLoadingReceipt] = useState(false);
+  const [photoModal, setPhotoModal] = useState(false);
+
   const [toast, setToast] = useState<ToastState>({
     visible: false,
     type: "info",
@@ -154,6 +207,19 @@ export default function ImportsPage() {
 
   function showToast(type: ToastState["type"], message: string) {
     setToast({ visible: true, type, message });
+  }
+
+  function handleClose() {
+    setPhotoModal(false);
+  }
+
+  function handleModal() {
+    if (photoModal == true) {
+      setPhotoModal(false);
+    } else {
+      setPhotoModal(true);
+    }
+    console.log(photoModal);
   }
 
   async function handleExcelUpload(file: File) {
@@ -223,10 +289,7 @@ export default function ImportsPage() {
       setReceiptBatch(batch);
 
       if (batch.results.length > 0 && batch.errors.length === 0) {
-        showToast(
-          "success",
-          `Berhasil membaca ${batch.results.length} struk.`,
-        );
+        showToast("success", `Berhasil membaca ${batch.results.length} struk.`);
       } else if (batch.results.length > 0 && batch.errors.length > 0) {
         showToast(
           "warning",
@@ -250,9 +313,7 @@ export default function ImportsPage() {
       <Toast
         type={toast.type}
         visible={toast.visible}
-        onClose={() =>
-          setToast((current) => ({ ...current, visible: false }))
-        }
+        onClose={() => setToast((current) => ({ ...current, visible: false }))}
       >
         {toast.message}
       </Toast>
@@ -276,7 +337,7 @@ export default function ImportsPage() {
               </p>
             </div>
 
-            <label className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            <label className={"cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 " + `${isLoadingExcel? "disabled" : ""}`}>
               {isLoadingExcel ? "Membaca..." : "Pilih File"}
               <input
                 type="file"
@@ -341,26 +402,23 @@ export default function ImportsPage() {
             <div>
               <h2 className="text-lg font-semibold">Import Struk</h2>
               <p className="text-sm text-slate-500">
-                Foto (jpg/png/webp), PDF, atau .zip berisi banyak foto
-                sekaligus - boleh pilih beberapa file dalam satu kali unggah.
+                Foto (jpg/png/webp), PDF, atau .zip berisi banyak foto sekaligus
+                - boleh pilih beberapa file dalam satu kali unggah.
               </p>
             </div>
 
-            <label className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-              {isLoadingReceipt ? "Membaca..." : "Unggah Struk"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,.pdf,.zip,application/pdf,application/zip"
-                multiple
-                className="hidden"
-                disabled={isLoadingReceipt}
-                onChange={(event) => {
-                  const files = Array.from(event.target.files ?? []);
-                  if (files.length > 0) void handleReceiptUpload(files);
-                  event.target.value = "";
-                }}
-              />
+            <label
+              className={`cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 ${photoModal ? "disabled" : ""}`}
+              onClick={handleModal}
+            >
+              Unggah Struk
             </label>
+
+            {photoModal && (
+              <div className="formAddWrapper">
+                <UploadReceipts onClose={handleClose}  onSubmit={handleReceiptUpload}/>
+              </div>
+            )}
           </div>
 
           {receiptBatch && (
@@ -372,8 +430,8 @@ export default function ImportsPage() {
                   </div>
                   {receiptBatch.errors.map((err, index) => (
                     <div key={index}>
-                      <span className="font-medium">{err.source_file}</span>{" "}
-                      - {err.message}
+                      <span className="font-medium">{err.source_file}</span> -{" "}
+                      {err.message}
                     </div>
                   ))}
                 </div>
@@ -404,13 +462,9 @@ export default function ImportsPage() {
                       {receiptResult.draft.transaction_date ?? "-"}
                     </div>
                     <div>
-                      <span className="font-medium text-slate-900">
-                        Total:
-                      </span>{" "}
+                      <span className="font-medium text-slate-900">Total:</span>{" "}
                       Rp{" "}
-                      {receiptResult.draft.total_amount.toLocaleString(
-                        "id-ID",
-                      )}
+                      {receiptResult.draft.total_amount.toLocaleString("id-ID")}
                     </div>
                   </div>
 
@@ -418,7 +472,9 @@ export default function ImportsPage() {
 
                   <SimplifiedJsonBlock
                     data={receiptResult.simplified}
-                    onCopy={() => showToast("info", "JSON disalin ke clipboard.")}
+                    onCopy={() =>
+                      showToast("info", "JSON disalin ke clipboard.")
+                    }
                   />
                 </div>
               ))}
@@ -426,7 +482,9 @@ export default function ImportsPage() {
           )}
         </section>
       </div>
+      <Table HeaderProps={COLUMNS} data={MOCK_DATA}/>
     </main>
+
   );
 }
 
@@ -447,9 +505,7 @@ function SimplifiedJsonBlock({
         onClick={() => setExpanded((current) => !current)}
         className="flex w-full items-center justify-between px-4 py-2 text-left text-sm font-medium text-slate-700"
       >
-        <span>
-          JSON siap-integrasi (order_id: {data.order_id})
-        </span>
+        <span>JSON siap-integrasi (order_id: {data.order_id})</span>
         <span className="text-xs text-blue-600 hover:underline">
           {expanded ? "Sembunyikan" : "Lihat JSON"}
         </span>

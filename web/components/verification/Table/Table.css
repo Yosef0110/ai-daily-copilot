@@ -96,14 +96,14 @@
 
 .actionTableWrapper {
   display: flex;
-  width: 180px;
-  justify-content: end;
+  width: 100%;
+  justify-content: flex-end;
   gap: 10px;
 }
 
 .actionTableWrapper > button {
-  padding: .5rem .7rem;
-  border-radius: .5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
   transition: all 0.3s;
 }
 
@@ -138,7 +138,8 @@
 
 @media screen and (max-width: 768px) {
   .searchContainer {
-    gap: 0;
+    gap: .5rem;
+    flex-direction: column;
   }
 
   .tableWrapper {
@@ -147,5 +148,11 @@
 
   .sizeHandler {
     display: none;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .pagination {
+    flex-direction: column;
   }
 }

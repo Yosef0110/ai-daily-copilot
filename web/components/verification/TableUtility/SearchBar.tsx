@@ -1,4 +1,3 @@
-import "./SearchBar.css";
 import SearchIcon from "../Icons/SearchIcon";
 
 import type { ColumnFiltersState } from "@tanstack/react-table";
@@ -24,29 +23,45 @@ const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
     ]);
   };
 
-  const handleColumnChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleColumnChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const columnId = e.target.value;
 
     setSearchColumn(columnId);
 
     setColumnFilters((prev) => [
       ...prev.filter((filter) => filter.id !== searchColumn),
-      ...(searchValue
-        ? [{ id: columnId, value: searchValue }]
-        : []),
+      ...(searchValue ? [{ id: columnId, value: searchValue }] : []),
     ]);
   };
 
   return (
     <>
-      <form className="searchTitle" onSubmit={(e) => {e.preventDefault();}}>
-        <label htmlFor="searchColumn" className="labelWillHidden">Cari berdasarkan kolom</label>
+      <form
+        className="w-full min-w-0 md:w-[60%] md:min-w-[45%]"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
+        <label htmlFor="searchColumn" className="labelWillHidden">
+          Cari berdasarkan kolom
+        </label>
 
-        <div className="form-group searchBarWrapper">
+        <div className="flex w-full gap-0">
           <select
-            className="filterSearch"
+            className="shrink-0
+            rounded-l-md
+            border
+            border-r-0
+            border-slate-300
+            bg-white
+            px-3
+            py-2
+            text-sm
+            text-slate-700
+            outline-none
+            focus:border-slate-400
+            focus:ring-0
+            w-32"
             id="searchColumn"
             value={searchColumn}
             onChange={handleColumnChange}
@@ -64,11 +79,14 @@ const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
               ))}
           </select>
 
-          <div className="searchBar">
-            <SearchIcon width={20} color="grey" />
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon
+              width={20}
+              color="grey"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+            />
 
             <input
-              className="form-control"
               type="search"
               id="searchInput"
               placeholder="Cari..."
@@ -80,6 +98,19 @@ const SearchBar = ({ setColumnFilters, columns }: SearchBarProps) => {
                 setSearchValue(value);
                 updateFilter(searchColumn, value);
               }}
+              className="rounded-r-md
+              border
+              border-slate-300
+              bg-white
+              py-2
+              pl-10
+              pr-3
+              text-sm
+              outline-none
+              placeholder:text-slate-400
+              focus:border-slate-400
+              focus:ring-0
+              w-full"
             />
           </div>
         </div>
