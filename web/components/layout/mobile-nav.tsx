@@ -19,6 +19,10 @@ const navigation = [
   {
     href: "/forecast",
     label: "Forecasting",
+  },
+  {
+    href: "/imports",
+    label: "Imports"
   }
 ];
 
@@ -27,7 +31,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-white md:hidden">
-      <div className="grid grid-cols-4">
+      <div className="grid grid-cols-5">
         {navigation.map((item) => {
           const isActive =
             pathname === item.href ||

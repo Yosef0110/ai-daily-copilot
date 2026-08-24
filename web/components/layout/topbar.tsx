@@ -20,7 +20,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-30 hidden h-16 items-center justify-end border-b bg-white px-6 md:flex">
+    <header className="sticky top-0 z-5 hidden h-16 items-center justify-end border-b bg-white px-6 md:flex">
       <div className="relative">
         <button
           type="button"

@@ -403,7 +403,7 @@ export default function ImportsPage() {
         {toast.message}
       </Toast>
 
-      <div className="mx-auto max-w-7xl space-y-8">
+      <div className="mx-auto w-full max-w-7xl space-y-8">
         <div>
           <h2 className="text-3xl font-bold">Import Struk &amp; Excel</h2>
           <p className="mt-2 text-slate-600">
@@ -493,7 +493,7 @@ export default function ImportsPage() {
             </div>
 
             <label
-              className={`cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 ${photoModal ? "disabled" : ""}`}
+              className={`cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 ${photoModal || isLoadingExcel ? "disabled" : ""}`}
               onClick={handleModal}
             >
               Unggah Struk
@@ -571,7 +571,7 @@ export default function ImportsPage() {
         </section>
       </div>
         
-      <div> 
+      <div className="mx-auto w-full max-w-7xl "> 
         <h2 className="text-3xl font-bold mb-5">Informasi Product: </h2>
         {isLoadingProducts ? (
           <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">

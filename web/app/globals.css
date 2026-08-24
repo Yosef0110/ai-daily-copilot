@@ -30,3 +30,10 @@ body {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+
+@media screen and (max-width: 768px) {
+  .mainComponent {
+    margin-left: 0 !important;
+  }
+}

@@ -24,6 +24,11 @@
   opacity: 1;
 }
 
+.sizeHandler.resizeDisabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
 .tableWrapper {
   border-radius: 10px;
   overflow-x: auto;
