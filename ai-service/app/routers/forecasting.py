@@ -4,7 +4,7 @@ from pathlib import Path
 
 from app.services.forecast_service import generate_forecast
 from app.services.forecast_recommendation_service import generate_action_recommendation 
-from app.schemas.forecasting import ForecastResponse
+from app.schemas.forecasting import ForecastResponse, ForecastRequest
 
 router = APIRouter(
     prefix="/api/forecasting",
@@ -27,52 +27,64 @@ def get_available_products():
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail="Could not locate sales data.")
 
-@router.get("/predict", response_model=ForecastResponse)
-def get_prediction(
-    product_name: str = Query(..., description="The name of the product (e.g., 'Aqua 600ml')"),
-    days: int = Query(7, ge=1, le=7, description="Number of days to predict (Must be between 1 and 7)"),
-    model_type: str = Query("auto_arima", description="Choose: naive, auto_arima, holt_winters"),
-    current_stock: int = Query(..., ge=0, description="Current inventory level of the product")
-):
+@router.post("/predict", response_model=ForecastResponse)
+def get_prediction(payload: ForecastRequest):
     """
-    Generate a sales forecast for a specific product.
+    Generate a sales forecast using historical sales data
+    supplied by the Next.js/Supabase layer.
     """
-    #HARDCODED, NEED TO ROUTE PROPERLY LATER
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent
-    file_path = BASE_DIR / "data" / "seed_sales_history.csv"
-    
-    try:
-        #Try catch in case of error in reading the file, or if the file is missing
-        df = pd.read_csv(file_path)
-    except FileNotFoundError:
-        raise HTTPException(status_code=500, detail=f"File missing. I am looking here: {file_path}")
 
-    #Filter data for the requested product
-    product_data = df[df['product_name'] == product_name]
-    
-    if product_data.empty:
-        raise HTTPException(status_code=404, detail=f"Product '{product_name}' not found in history.")
-
-    #Format the data into a Time Series pandas Series
-    product_data['date'] = pd.to_datetime(product_data['date'])
-    ts_data = product_data.set_index('date')['quantity_sold']
-
-    #Runs forecast AND recommendation before returning
-    try:
-        result = generate_forecast(ts_data, days_forward=days, model_type=model_type)
-        
-        #Recommendation Logic 
-        action_plan = generate_action_recommendation(
-            predictions=result["predictions"], 
-            current_stock=current_stock, 
-            product_name=product_name
+    if not payload.history:
+        raise HTTPException(
+            status_code=400,
+            detail="Historical sales data is empty.",
         )
-        
-        #Attach the recommendation to the final result
+
+    df = pd.DataFrame(
+        [
+            {
+                "date": item.date,
+                "quantity_sold": item.quantity_sold,
+            }
+            for item in payload.history
+        ]
+    )
+
+    df["date"] = pd.to_datetime(df["date"])
+
+    df = (
+        df.groupby("date", as_index=False)["quantity_sold"]
+        .sum()
+        .sort_values("date")
+    )
+
+    ts_data = df.set_index("date")["quantity_sold"]
+
+    try:
+        result = generate_forecast(
+            ts_data,
+            days_forward=payload.days,
+            model_type=payload.model_type,
+        )
+
+        action_plan = generate_action_recommendation(
+            predictions=result["predictions"],
+            current_stock=payload.current_stock,
+            product_name=payload.product_name,
+        )
+
         result["recommendation"] = action_plan
+
         return result
-        
+
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Forecast generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Forecast generation failed: {str(e)}",
+        )

@@ -68,35 +68,88 @@ export default function ForecastingModule() {
 
   // The Fetch Function for the Chart
   const handleGenerateForecast = async () => {
-    if (!product) {
-      alert("Tunggu sebentar, sedang memuat data produk!");
+    if (!product || !productId) {
+      alert("Produk belum dipilih.");
       return;
     }
 
     setIsLoading(true);
+
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-      const url = `${baseUrl}/api/forecasting/predict?product_name=${encodeURIComponent(product)}&days=${days}&model_type=${model}&current_stock=${currentStock}`;
-            
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Failed to fetch data from backend");
-      
+      // 1. Ambil historical sales dari Supabase melalui Next.js API.
+      const historyResponse = await fetch(
+        `/api/forecasting/history?product_id=${encodeURIComponent(productId)}`,
+      );
+
+      const historyResult = await historyResponse.json();
+
+      if (!historyResponse.ok || !historyResult.success) {
+        throw new Error(
+          historyResult.message ??
+            "Gagal mengambil histori penjualan",
+        );
+      }
+
+      // 2. Kirim historical sales ke FastAPI untuk diproses model.
+      const baseUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "http://127.0.0.1:8000";
+
+      const response = await fetch(
+        `${baseUrl}/api/forecasting/predict`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            product_name: product,
+            days,
+            model_type: model,
+            current_stock: currentStock,
+            history: historyResult.data.history,
+          }),
+        },
+      );
+
       const data = await response.json();
 
-      const formattedData = data.predictions.map((pred: number, index: number) => ({
-        day: `Hari ${index + 1}`,
-        prediksi: Math.round(pred), 
-        rentang: data.lower_bounds && data.upper_bounds 
-          ? [Math.round(data.lower_bounds[index]), Math.round(data.upper_bounds[index])] 
-          : [Math.round(pred), Math.round(pred)]
-      }));
+      if (!response.ok) {
+        console.error("Forecast backend error:", data);
+
+        throw new Error(
+          data.detail ?? "Gagal menghasilkan forecast",
+        );
+      }
+
+      // 3. Format hasil prediksi untuk Recharts.
+      const formattedData = data.predictions.map(
+        (pred: number, index: number) => ({
+          day: `Hari ${index + 1}`,
+          prediksi: Math.round(pred),
+          rentang:
+            data.lower_bounds && data.upper_bounds
+              ? [
+                  Math.round(data.lower_bounds[index]),
+                  Math.round(data.upper_bounds[index]),
+                ]
+              : [
+                  Math.round(pred),
+                  Math.round(pred),
+                ],
+        }),
+      );
 
       setChartData(formattedData);
       setInsight(data.recommendation);
-
     } catch (error) {
       console.error("Error generating forecast:", error);
-      alert("Gagal mengambil data dari backend. Pastikan server FastAPI berjalan!");
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Gagal menghasilkan forecast",
+      );
     } finally {
       setIsLoading(false);
     }
