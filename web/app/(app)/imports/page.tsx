@@ -23,50 +23,6 @@ import { Toast } from "@/components/shared/toast";
 import Table from "@/components/verification/Table/Table";
 import StatusCell from "@/components/verification/TableUtility/StatusCell";
 
-const COLUMNS = [
-  {
-    header: "Nama Product",
-    accessorKey: "name",
-  },
-  // {
-  //   header: "Kategori Produk",
-  //   accessorKey: "category",
-  // },
-  {
-    header: "SKU",
-    accessorKey: "SKU",
-  },
-  // {
-  //   header: "Unit",
-  //   accessorKey: "unit",
-  // },
-  {
-    header: "Stok Tersisa",
-    accessorKey: "current_stock",
-    filterFn: "equalsNumber",
-  },
-  {
-    header: "Harga",
-    accessorKey: "selling_price",
-    filterFn: "equalsNumber",
-  },
-  {
-    header: "Status",
-    accessorKey: "status",
-    cell: StatusCell,
-    filterFn: "equalsNumber",
-    enableColumnSearch: false,
-  },
-  {
-    header: "Tanggal Dibuat",
-    accessorKey: "created_at",
-  },
-  {
-    header: "Update Terakhir",
-    accessorKey: "updated_at",
-  },
-];
-
 type ProductMatch = {
   matched_product_id: string | null;
   matched_product_name: string | null;
@@ -569,21 +525,6 @@ export default function ImportsPage() {
             </div>
           )}
         </section>
-      </div>
-
-      <div className="mx-auto w-full max-w-7xl ">
-        <h2 className="text-3xl font-bold mb-5">Informasi Product: </h2>
-        {isLoadingProducts ? (
-          <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">
-            Memuat data produk...
-          </div>
-        ) : products.length === 0 ? (
-          <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">
-            Tidak ada produk.
-          </div>
-        ) : (
-          <Table HeaderProps={COLUMNS} data={products} withAction={false} />
-        )}
       </div>
     </main>
   );
