@@ -1,0 +1,18 @@
+.testing {
+  display: flex;
+  flex-direction: row;
+}
+
+.testkiri {
+  width: 20%;
+}
+
+.testkanan {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.kananatas {
+  height: 250px;
+}
