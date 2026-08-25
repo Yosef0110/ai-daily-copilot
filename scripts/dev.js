@@ -69,7 +69,7 @@ if (!fs.existsSync(path.join(ROOT, "web", "node_modules"))) {
 const pythonCandidates =
   process.platform === "win32"
     ? ["python", "py"]
-    : ["python3", "python"];
+    : ["python", "python3"];
 
 let pythonCommand = null;
 
@@ -166,6 +166,79 @@ if (supabaseStatus.status !== 0) {
 } else {
   console.log("Supabase already running.");
 }
+
+// ============================================================
+// LOCAL ENV GENERATION
+// ============================================================
+
+console.log("Preparing local environment variables...");
+
+const statusResult = spawnSync(
+  "supabase",
+  ["status", "-o", "env"],
+  {
+    cwd: ROOT,
+    encoding: "utf8",
+    shell: false,
+  },
+);
+
+if (statusResult.status !== 0) {
+  console.error("Failed to read Supabase local environment.");
+  console.error(statusResult.stderr);
+  process.exit(1);
+}
+
+const supabaseEnv = statusResult.stdout;
+
+function readEnvValue(name) {
+  const match = supabaseEnv.match(
+    new RegExp(`^${name}=(.*)$`, "m"),
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return match[1].replace(/^["']|["']$/g, "").trim();
+}
+
+const supabaseUrl =
+  readEnvValue("API_URL") ??
+  "http://127.0.0.1:54321";
+
+const publishableKey =
+  readEnvValue("PUBLISHABLE_KEY") ??
+  readEnvValue("ANON_KEY");
+
+if (!publishableKey) {
+  console.error(
+    "Could not determine the local Supabase publishable key.",
+  );
+  process.exit(1);
+}
+
+const webEnvPath = path.join(
+  ROOT,
+  "web",
+  ".env.local",
+);
+
+const envContent = [
+  `NEXT_PUBLIC_SUPABASE_URL=${supabaseUrl}`,
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publishableKey}`,
+  `NEXT_PUBLIC_AI_SERVICE_URL=http://127.0.0.1:8000`,
+  "",
+].join("\n");
+
+fs.writeFileSync(
+  webEnvPath,
+  envContent,
+  "utf8",
+);
+
+console.log("Local web/.env.local is ready.");
+
 
 // ============================================================
 // NEXT.JS + FASTAPI
