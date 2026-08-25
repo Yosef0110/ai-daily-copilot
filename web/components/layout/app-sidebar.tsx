@@ -17,6 +17,10 @@ const navigation = [
     label: "Inventory",
   },
   {
+    href: "/transactions",
+    label: "Transactions",
+  },
+  {
     href: "/forecast",
     label: "Forecasting",
   },
