@@ -39,8 +39,7 @@ console.log("Starting AI Daily Copilot...\n");
 if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
   console.log("Installing root dependencies...");
 
-  const npmCommand =
-    process.platform === "win32" ? "npm.cmd" : "npm";
+  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
   run(npmCommand, ["install"]);
 } else {
@@ -54,8 +53,7 @@ if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
 if (!fs.existsSync(path.join(ROOT, "web", "node_modules"))) {
   console.log("Installing web dependencies...");
 
-  const npmCommand =
-    process.platform === "win32" ? "npm.cmd" : "npm";
+  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
   run(npmCommand, ["--prefix", "web", "install"]);
 } else {
@@ -67,9 +65,7 @@ if (!fs.existsSync(path.join(ROOT, "web", "node_modules"))) {
 // ============================================================
 
 const pythonCandidates =
-  process.platform === "win32"
-    ? ["python", "py"]
-    : ["python3", "python"];
+  process.platform === "win32" ? ["python", "py"] : ["python3", "python"];
 
 let pythonCommand = null;
 
@@ -92,14 +88,7 @@ console.log(`Using Python command: ${pythonCommand}`);
 console.log("Checking Python requirements...");
 
 if (pythonCommand === "py") {
-  run("py", [
-    "-m",
-    "pip",
-    "install",
-    "-r",
-    "ai-service/requirements.txt",
-    "--quiet",
-  ]);
+  run("py", ["-m", "pip", "install", "-r", "ai-service/requirements.txt"]);
 } else {
   run(pythonCommand, [
     "-m",
@@ -107,7 +96,6 @@ if (pythonCommand === "py") {
     "install",
     "-r",
     "ai-service/requirements.txt",
-    "--quiet",
   ]);
 }
 
@@ -133,9 +121,7 @@ const dockerStatus = spawnSync("docker", ["info"], {
 
 if (dockerStatus.status !== 0) {
   console.error("Docker Desktop belum berjalan.");
-  console.error(
-    "Jalankan Docker Desktop lalu jalankan npm run dev lagi.",
-  );
+  console.error("Jalankan Docker Desktop lalu jalankan npm run dev lagi.");
   process.exit(1);
 }
 
@@ -153,117 +139,68 @@ if (!commandExists("supabase")) {
 
 console.log("Checking Supabase...");
 
-const supabaseStatus = spawnSync("supabase", ["status"], {
+const status = spawnSync("npx", ["supabase", "status"], {
   cwd: ROOT,
-  stdio: "ignore",
-  shell: false,
+  encoding: "utf8",
+  shell: true,
 });
 
-if (supabaseStatus.status !== 0) {
+const output = `${status.stdout ?? ""}\n${status.stderr ?? ""}`;
+
+if (
+  status.status === 0 &&
+  output.includes("supabase local development setup is running")
+) {
+  console.log("Supabase already running.");
+} else {
   console.log("Supabase is not running. Starting Supabase...");
 
-  run("supabase", ["start"]);
-} else {
-  console.log("Supabase already running.");
+  const start = spawnSync("npx", ["supabase", "start"], {
+    cwd: ROOT,
+    stdio: "inherit",
+    shell: true,
+  });
+
+  if (start.status !== 0) {
+    console.error("Failed to start Supabase.");
+    process.exit(1);
+  }
 }
 
 // ============================================================
 // NEXT.JS + FASTAPI
 // ============================================================
+const pyC =
+  process.platform === "win32" ? "py" : "python3";
 
-console.log("\nStarting Next.js and FastAPI...\n");
+const fastApiArgs = [
+  "-m",
+  "uvicorn",
+  "app.main:app",
+  "--reload",
+  "--port",
+  "8000",
+];
 
-const npmCommand =
-  process.platform === "win32" ? "npm.cmd" : "npm";
+let fastApiProcess;
 
-const nextProcess = spawn(
-  npmCommand,
-  ["--prefix", "web", "run", "dev"],
-  {
-    cwd: ROOT,
-    stdio: "inherit",
-    shell: false,
-  },
-);
-
-const fastApiArgs =
-  pythonCommand === "py"
-    ? [
-        "-m",
-        "uvicorn",
-        "app.main:app",
-        "--reload",
-        "--port",
-        "8000",
-      ]
-    : [
-        "-m",
-        "uvicorn",
-        "app.main:app",
-        "--reload",
-        "--port",
-        "8000",
-      ];
-
-const fastApiProcess = spawn(
-  pythonCommand,
-  fastApiArgs,
-  {
-    cwd: path.join(ROOT, "ai-service"),
-    stdio: "inherit",
-    shell: false,
-  },
-);
-
-// ============================================================
-// SHUTDOWN HANDLING
-// ============================================================
-
-let shuttingDown = false;
-
-function shutdown() {
-  if (shuttingDown) return;
-
-  shuttingDown = true;
-
-  console.log("\nStopping development servers...");
+try {
+  fastApiProcess = spawn(
+    pyC,
+    fastApiArgs,
+    {
+      cwd: path.join(ROOT, "ai-service"),
+      stdio: "inherit",
+      shell: false,
+    }
+  );
+} catch (error) {
+  console.error("Failed to start FastAPI:");
+  console.error(error);
 
   if (!nextProcess.killed) {
     nextProcess.kill("SIGTERM");
   }
 
-  if (!fastApiProcess.killed) {
-    fastApiProcess.kill("SIGTERM");
-  }
-
-  setTimeout(() => {
-    process.exit(0);
-  }, 500);
+  process.exit(1);
 }
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-nextProcess.on("error", (error) => {
-  console.error("Failed to start Next.js:", error.message);
-  shutdown();
-});
-
-fastApiProcess.on("error", (error) => {
-  console.error("Failed to start FastAPI:", error.message);
-  shutdown();
-});
-
-nextProcess.on("exit", (code) => {
-  if (!shuttingDown && code !== 0) {
-    console.error(`Next.js exited with code ${code}`);
-    shutdown();
-  }
-});
-
-fastApiProcess.on("exit", (code) => {
-  if (!shuttingDown && code !== 0) {
-    console.error(`FastAPI exited with code ${code}`);
-    shutdown();
-  }
-});

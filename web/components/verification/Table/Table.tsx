@@ -116,19 +116,6 @@ const Table = ({
     onPaginationChange: setPagination,
   });
 
-  const getStatusClass = (status: number) => {
-    switch (status) {
-      case 2:
-        return "status status-active";
-      case 1:
-        return "status status-low";
-      case 0:
-        return "status status-inactive";
-      default:
-        return "";
-    }
-  };
-
   return (
     <>
       <div className="mx-auto w-full max-w-7xl px-4 tableContainer">
@@ -242,11 +229,6 @@ const Table = ({
                     {row.getAllCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className={`px-4 py-3 ${
-                          cell.column.id === "status"
-                            ? getStatusClass(cell.getValue<number>())
-                            : ""
-                        }`}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
