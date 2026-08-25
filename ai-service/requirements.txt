@@ -7,6 +7,3 @@ openpyxl
 pillow
 rapidfuzz
 scikit-learn
-numpy
-statsmodels
-pmdarima
