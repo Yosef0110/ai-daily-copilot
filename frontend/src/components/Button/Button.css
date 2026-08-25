@@ -1,0 +1,53 @@
+.custom-button {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 50px;
+  width: 100%;
+  max-width: 200px;
+
+  min-height: 50px;
+  height: 100%;
+  max-height: 200px;
+
+  border: solid;
+  border-color: inherit;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.custom-button {
+  border: none;
+  border-radius: 6px;
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-manual {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-manual:hover {
+  background-color: #059669 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.btn-photo {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-photo:hover:not(:disabled) {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.custom-button:active:not(:disabled) {
+  transform: translateY(2px);
+}

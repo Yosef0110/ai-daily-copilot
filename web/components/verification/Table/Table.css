@@ -1,0 +1,313 @@
+td, th {
+  text-align: center;
+}
+
+.tableIndexing {
+  width: 25px;
+  text-align: center;
+}
+
+.sizeHandler {
+  position: absolute;
+  opacity: 0;
+  right: 0;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  background-color: #b4b4b4;
+}
+
+.sizeHandler.isResizing {
+  background-color: #0259fc;
+  opacity: 1;
+}
+
+*:hover > .sizeHandler {
+  opacity: 1;
+}
+
+.sizeHandler.resizeDisabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.tableWrapper {
+  border-radius: 10px;
+  overflow-x: auto;
+} 
+
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.searchBox {
+  flex: 1;
+  min-width: 0;
+}
+
+.filterBox {
+  flex-shrink: 0;
+}
+
+.searchContainer {
+  display: flex;
+  width: 100%;
+
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.sortable-header > svg {
+  margin-left: 5px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #e2e8f0;
+}
+
+.pageIndexing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.pageIndexing > div {
+  display: flex;
+  gap: .5rem;
+}
+
+.pageIndexing > div > button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  box-shadow: none;
+  appearance: none;
+  border-radius: 100%;
+  padding: 5px;
+}
+
+.pageIndexing > div > button:hover {
+  background-color: #dcdbdb;
+}
+
+.pageIndexing > div > button:hover:disabled {
+  background-color: transparent;
+}
+
+.actionColumn {
+  text-align: end;
+}
+
+.actionTableWrapper {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.actionTableWrapper > button {
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  transition: all 0.3s;
+}
+
+.adjustButton {
+  background-color: #0259fc;
+  border: 1px solid white ;
+  color: white;
+}
+
+.historyButton {
+  background-color: white;
+  border: 1px solid black;
+  color: black;
+}
+
+.adjustButton:hover {
+  color: #0259fc;
+  border: 1px solid #0259fc;
+  background-color: white;
+}
+
+.historyButton:hover {
+  color: white;
+  background-color: 1px solid black;
+  background-color: rgb(15, 11, 11);
+}
+
+.actionTableWrapper > button:active {
+  opacity: 0.7;
+}
+
+.tableSection {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: white;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tableSection {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: white;
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.dataTable {
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  /*
+   * Jangan biarkan isi cell memaksa
+   * ukuran kolom keluar dari sizing TanStack.
+   */
+}
+
+.dataTable th,
+.dataTable td {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.dataTable th {
+  position: relative;
+}
+
+.tableCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sizeHandler {
+  position: absolute;
+
+  top: 0;
+  right: 0;
+
+  width: 5px;
+  height: 100%;
+
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+
+  background-color: #b4b4b4;
+
+  opacity: 0;
+
+  z-index: 10;
+}
+
+.dataTable th:hover > .sizeHandler {
+  opacity: 1;
+}
+
+.sizeHandler.isResizing {
+  opacity: 1;
+  background-color: #0259fc;
+}
+
+.sizeHandler.resizeDisabled {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+
+.tableIndexing {
+  width: 25px;
+  min-width: 25px;
+  max-width: 25px;
+
+  box-sizing: border-box;
+
+  text-align: center;
+}
+
+.actionColumn {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+
+  box-sizing: border-box;
+
+  text-align: right;
+}
+
+
+.dataTable tbody tr {
+  border-top: 1px solid #e2e8f0;
+}
+
+.dataTable tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+@media screen and (max-width: 768px) {
+  .sizeHandler {
+    display: none;
+  }
+
+  .tableWrapper {
+    overflow-x: auto;
+  }
+}
+
+
+
+@media screen and (max-width: 768px) {
+  .searchContainer {
+    gap: .5rem;
+    flex-direction: column;
+  }
+
+  .tableWrapper {
+    overflow: auto;
+  }
+
+  .sizeHandler {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .pagination {
+    flex-direction: column;
+  }
+}
