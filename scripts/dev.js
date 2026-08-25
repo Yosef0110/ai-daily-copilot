@@ -3,13 +3,18 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
+const IS_WINDOWS = process.platform === "win32";
+
+// ============================================================
+// HELPERS
+// ============================================================
 
 function commandExists(command) {
-  const checker = process.platform === "win32" ? "where" : "which";
+  const checker = IS_WINDOWS ? "where" : "which";
 
   const result = spawnSync(checker, [command], {
     stdio: "ignore",
-    shell: process.platform === "win32",
+    shell: IS_WINDOWS,
   });
 
   return result.status === 0;
@@ -19,11 +24,17 @@ function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     cwd: ROOT,
     stdio: "inherit",
-    shell: false,
+    shell: IS_WINDOWS,
     ...options,
   });
 
+  if (result.error) {
+    console.error(`Failed to run ${command}:`, result.error.message);
+    process.exit(1);
+  }
+
   if (result.status !== 0) {
+    console.error(`${command} exited with code ${result.status}`);
     process.exit(result.status ?? 1);
   }
 
@@ -39,10 +50,13 @@ console.log("Starting AI Daily Copilot...\n");
 if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
   console.log("Installing root dependencies...");
 
-  const npmCommand =
-    process.platform === "win32" ? "npm.cmd" : "npm";
-
-  run(npmCommand, ["install"]);
+  if (IS_WINDOWS) {
+    run("cmd.exe", ["/d", "/s", "/c", "npm install"], {
+      shell: false,
+    });
+  } else {
+    run("npm", ["install"]);
+  }
 } else {
   console.log("Root dependencies already installed.");
 }
@@ -54,10 +68,17 @@ if (!fs.existsSync(path.join(ROOT, "node_modules"))) {
 if (!fs.existsSync(path.join(ROOT, "web", "node_modules"))) {
   console.log("Installing web dependencies...");
 
-  const npmCommand =
-    process.platform === "win32" ? "npm.cmd" : "npm";
-
-  run(npmCommand, ["--prefix", "web", "install"]);
+  if (IS_WINDOWS) {
+    run(
+      "cmd.exe",
+      ["/d", "/s", "/c", "npm --prefix web install"],
+      {
+        shell: false,
+      },
+    );
+  } else {
+    run("npm", ["--prefix", "web", "install"]);
+  }
 } else {
   console.log("Web dependencies already installed.");
 }
@@ -66,10 +87,9 @@ if (!fs.existsSync(path.join(ROOT, "web", "node_modules"))) {
 // PYTHON
 // ============================================================
 
-const pythonCandidates =
-  process.platform === "win32"
-    ? ["python", "py"]
-    : ["python", "python3"];
+const pythonCandidates = IS_WINDOWS
+  ? ["python", "py"]
+  : ["python", "python3"];
 
 let pythonCommand = null;
 
@@ -83,7 +103,7 @@ for (const candidate of pythonCandidates) {
 if (!pythonCommand) {
   console.error("Python tidak ditemukan.");
   console.error(
-    "Install Python / aktifkan environment project terlebih dahulu.",
+    "Install Python atau aktifkan environment project terlebih dahulu.",
   );
   process.exit(1);
 }
@@ -91,25 +111,20 @@ if (!pythonCommand) {
 console.log(`Using Python command: ${pythonCommand}`);
 console.log("Checking Python requirements...");
 
-if (pythonCommand === "py") {
-  run("py", [
+run(
+  pythonCommand,
+  [
     "-m",
     "pip",
     "install",
     "-r",
     "ai-service/requirements.txt",
     "--quiet",
-  ]);
-} else {
-  run(pythonCommand, [
-    "-m",
-    "pip",
-    "install",
-    "-r",
-    "ai-service/requirements.txt",
-    "--quiet",
-  ]);
-}
+  ],
+  {
+    shell: IS_WINDOWS && pythonCommand === "py",
+  },
+);
 
 console.log("Python dependencies ready.");
 
@@ -128,8 +143,16 @@ console.log("Checking Docker...");
 const dockerStatus = spawnSync("docker", ["info"], {
   cwd: ROOT,
   stdio: "ignore",
-  shell: false,
+  shell: IS_WINDOWS,
 });
+
+if (dockerStatus.error) {
+  console.error(
+    "Gagal mengecek Docker:",
+    dockerStatus.error.message,
+  );
+  process.exit(1);
+}
 
 if (dockerStatus.status !== 0) {
   console.error("Docker Desktop belum berjalan.");
@@ -142,27 +165,64 @@ if (dockerStatus.status !== 0) {
 console.log("Docker is running.");
 
 // ============================================================
-// SUPABASE
+// SUPABASE CLI
 // ============================================================
 
 if (!commandExists("supabase")) {
   console.error("Supabase CLI tidak ditemukan.");
-  console.error("Install Supabase CLI terlebih dahulu.");
+  console.error(
+    "Install Supabase CLI terlebih dahulu, lalu jalankan npm run dev lagi.",
+  );
   process.exit(1);
 }
 
+// ============================================================
+// SUPABASE STATUS / START
+// ============================================================
+
 console.log("Checking Supabase...");
 
-const supabaseStatus = spawnSync("supabase", ["status"], {
-  cwd: ROOT,
-  stdio: "ignore",
-  shell: false,
-});
+const supabaseStatus = spawnSync(
+  "supabase",
+  ["status"],
+  {
+    cwd: ROOT,
+    stdio: "ignore",
+    shell: IS_WINDOWS,
+  },
+);
 
 if (supabaseStatus.status !== 0) {
-  console.log("Supabase is not running. Starting Supabase...");
+  console.log(
+    "Supabase is not running. Starting Supabase...",
+  );
 
-  run("supabase", ["start"]);
+  const startResult = spawnSync(
+    "supabase",
+    ["start"],
+    {
+      cwd: ROOT,
+      stdio: "inherit",
+      shell: IS_WINDOWS,
+    },
+  );
+
+  if (startResult.error) {
+    console.error(
+      "Failed to start Supabase:",
+      startResult.error.message,
+    );
+    process.exit(1);
+  }
+
+  if (startResult.status !== 0) {
+    console.error(
+      `Supabase start failed with exit code ${startResult.status}`,
+    );
+    process.exit(startResult.status ?? 1);
+  }
+
+  console.log("Supabase started successfully.");
 } else {
   console.log("Supabase already running.");
 }
@@ -179,13 +239,27 @@ const statusResult = spawnSync(
   {
     cwd: ROOT,
     encoding: "utf8",
-    shell: false,
+    shell: IS_WINDOWS,
   },
 );
 
+if (statusResult.error) {
+  console.error(
+    "Failed to read Supabase local environment:",
+    statusResult.error.message,
+  );
+  process.exit(1);
+}
+
 if (statusResult.status !== 0) {
-  console.error("Failed to read Supabase local environment.");
-  console.error(statusResult.stderr);
+  console.error(
+    "Failed to read Supabase local environment.",
+  );
+
+  if (statusResult.stderr) {
+    console.error(statusResult.stderr);
+  }
+
   process.exit(1);
 }
 
@@ -200,7 +274,9 @@ function readEnvValue(name) {
     return null;
   }
 
-  return match[1].replace(/^["']|["']$/g, "").trim();
+  return match[1]
+    .replace(/^["']|["']$/g, "")
+    .trim();
 }
 
 const supabaseUrl =
@@ -239,54 +315,76 @@ fs.writeFileSync(
 
 console.log("Local web/.env.local is ready.");
 
-
 // ============================================================
 // NEXT.JS + FASTAPI
 // ============================================================
 
 console.log("\nStarting Next.js and FastAPI...\n");
 
-const npmCommand =
-  process.platform === "win32" ? "npm.cmd" : "npm";
+let nextProcess;
 
-const nextProcess = spawn(
-  npmCommand,
-  ["--prefix", "web", "run", "dev"],
-  {
-    cwd: ROOT,
-    stdio: "inherit",
-    shell: false,
-  },
-);
+if (IS_WINDOWS) {
+  nextProcess = spawn(
+    "cmd.exe",
+    [
+      "/d",
+      "/s",
+      "/c",
+      "npm --prefix web run dev",
+    ],
+    {
+      cwd: ROOT,
+      stdio: "inherit",
+      shell: false,
+    },
+  );
+} else {
+  nextProcess = spawn(
+    "npm",
+    ["--prefix", "web", "run", "dev"],
+    {
+      cwd: ROOT,
+      stdio: "inherit",
+      shell: false,
+    },
+  );
+}
 
-const fastApiArgs =
-  pythonCommand === "py"
-    ? [
-        "-m",
-        "uvicorn",
-        "app.main:app",
-        "--reload",
-        "--port",
-        "8000",
-      ]
-    : [
-        "-m",
-        "uvicorn",
-        "app.main:app",
-        "--reload",
-        "--port",
-        "8000",
-      ];
+let fastApiProcess;
 
-const fastApiProcess = spawn(
-  pythonCommand,
-  fastApiArgs,
-  {
-    cwd: path.join(ROOT, "ai-service"),
-    stdio: "inherit",
-    shell: false,
-  },
-);
+if (IS_WINDOWS && pythonCommand === "py") {
+  fastApiProcess = spawn(
+    "cmd.exe",
+    [
+      "/d",
+      "/s",
+      "/c",
+      "py -m uvicorn app.main:app --reload --port 8000",
+    ],
+    {
+      cwd: path.join(ROOT, "ai-service"),
+      stdio: "inherit",
+      shell: false,
+    },
+  );
+} else {
+  fastApiProcess = spawn(
+    pythonCommand,
+    [
+      "-m",
+      "uvicorn",
+      "app.main:app",
+      "--reload",
+      "--port",
+      "8000",
+    ],
+    {
+      cwd: path.join(ROOT, "ai-service"),
+      stdio: "inherit",
+      shell: false,
+    },
+  );
+}
 
 // ============================================================
 // SHUTDOWN HANDLING
@@ -295,18 +393,44 @@ const fastApiProcess = spawn(
 let shuttingDown = false;
 
 function shutdown() {
-  if (shuttingDown) return;
+  if (shuttingDown) {
+    return;
+  }
 
   shuttingDown = true;
 
   console.log("\nStopping development servers...");
 
-  if (!nextProcess.killed) {
-    nextProcess.kill("SIGTERM");
-  }
+  if (IS_WINDOWS) {
+    if (nextProcess.pid) {
+      spawnSync(
+        "taskkill",
+        ["/pid", String(nextProcess.pid), "/t", "/f"],
+        {
+          stdio: "ignore",
+          shell: true,
+        },
+      );
+    }
 
-  if (!fastApiProcess.killed) {
-    fastApiProcess.kill("SIGTERM");
+    if (fastApiProcess.pid) {
+      spawnSync(
+        "taskkill",
+        ["/pid", String(fastApiProcess.pid), "/t", "/f"],
+        {
+          stdio: "ignore",
+          shell: true,
+        },
+      );
+    }
+  } else {
+    if (!nextProcess.killed) {
+      nextProcess.kill("SIGTERM");
+    }
+
+    if (!fastApiProcess.killed) {
+      fastApiProcess.kill("SIGTERM");
+    }
   }
 
   setTimeout(() => {
@@ -317,26 +441,52 @@ function shutdown() {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
+// ============================================================
+// PROCESS ERROR HANDLING
+// ============================================================
+
 nextProcess.on("error", (error) => {
-  console.error("Failed to start Next.js:", error.message);
+  console.error(
+    "Failed to start Next.js:",
+    error.message,
+  );
+
   shutdown();
 });
 
 fastApiProcess.on("error", (error) => {
-  console.error("Failed to start FastAPI:", error.message);
+  console.error(
+    "Failed to start FastAPI:",
+    error.message,
+  );
+
   shutdown();
 });
 
 nextProcess.on("exit", (code) => {
-  if (!shuttingDown && code !== 0) {
-    console.error(`Next.js exited with code ${code}`);
+  if (
+    !shuttingDown &&
+    code !== null &&
+    code !== 0
+  ) {
+    console.error(
+      `Next.js exited with code ${code}`,
+    );
+
     shutdown();
   }
 });
 
 fastApiProcess.on("exit", (code) => {
-  if (!shuttingDown && code !== 0) {
-    console.error(`FastAPI exited with code ${code}`);
+  if (
+    !shuttingDown &&
+    code !== null &&
+    code !== 0
+  ) {
+    console.error(
+      `FastAPI exited with code ${code}`,
+    );
+
     shutdown();
   }
 });
