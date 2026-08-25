@@ -1,0 +1,30 @@
+.status-cell {
+  padding: 0 !important;
+  display: flex;
+  flex: 1;
+}
+
+.status {
+  margin: 0 auto;
+}
+
+.statusText {
+  display: block;
+  width: 120px;
+  text-align: center;
+}
+
+.status-active { 
+  background-color: var(--color-emerald-100);
+  color: var(--color-emerald-700);
+}
+
+.status-low { 
+  background-color: #fef3c6;
+  color: var(--color-amber-700);
+}
+
+.status-inactive {
+  background-color: var(--color-red-100);
+  color: var(--color-red-700);
+}

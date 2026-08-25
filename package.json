@@ -1,0 +1,11 @@
+{
+  "name": "ai-daily-copilot",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "supabase": "^2.115.0"
+  }
+}
