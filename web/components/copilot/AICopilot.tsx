@@ -67,6 +67,22 @@ export default function AICopilot() {
         }),
       });
 
+      const contentType =
+        response.headers.get("content-type") ?? "";
+
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+
+        console.error(
+          "AI Copilot returned non-JSON response:",
+          text,
+        );
+
+        throw new Error(
+          "AI Copilot API mengembalikan response yang tidak valid.",
+        );
+      }
+
       const result = await response.json();
 
       if (!response.ok) {
