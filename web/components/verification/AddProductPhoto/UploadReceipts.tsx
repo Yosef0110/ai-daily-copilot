@@ -715,7 +715,7 @@ const AddProductPhoto = ({ onClose, onSubmit }: Props) => {
                     <span className="fileName"> {files.length}</span>
                   </p>
 
-                  <p className="fileInfo">
+                  <p className="fileInfo truncate">
                     Nama File:
                     <span className="fileName"> {selectedFile?.name}</span>
                   </p>
@@ -783,7 +783,7 @@ function FileCard({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 ${
+      className={`filePreview flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 ${
         large ? "h-full min-h-[250px] w-full" : "h-20 w-20"
       }`}
     >
@@ -791,7 +791,7 @@ function FileCard({
 
       {large && (
         <>
-          <p className="mt-4 max-w-[80%] truncate text-sm font-semibold text-slate-800">
+          <p className="fileName mt-4 max-w-[80%] truncate text-sm font-semibold text-slate-800">
             {file.name}
           </p>
 

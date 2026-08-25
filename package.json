@@ -5,6 +5,7 @@
     "dev": "node scripts/dev.js"
   },
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "concurrently": "^10.0.5",
+    "supabase": "^2.115.0"
   }
 }

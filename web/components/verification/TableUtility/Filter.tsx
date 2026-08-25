@@ -55,7 +55,7 @@ const Filter = ({ setColumnFilters }: FilterProps) => {
           w-full"
         >
           <option value="-">-</option>
-          <option value={2}>Stock Tersedia</option>
+          <option value={2}>Stock Aman</option>
           <option value={1}>Stock Menipis</option>
           <option value={0}>Stock Habis</option>
         </select>

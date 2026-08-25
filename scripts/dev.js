@@ -156,9 +156,7 @@ if (dockerStatus.error) {
 
 if (dockerStatus.status !== 0) {
   console.error("Docker Desktop belum berjalan.");
-  console.error(
-    "Jalankan Docker Desktop lalu jalankan npm run dev lagi.",
-  );
+  console.error("Jalankan Docker Desktop lalu jalankan npm run dev lagi.");
   process.exit(1);
 }
 
@@ -387,7 +385,7 @@ if (IS_WINDOWS && pythonCommand === "py") {
 }
 
 // ============================================================
-// SHUTDOWN HANDLING
+// NEXT.JS + FASTAPI
 // ============================================================
 
 let shuttingDown = false;

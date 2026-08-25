@@ -23,53 +23,6 @@ import { Toast } from "@/components/shared/toast";
 import Table from "@/components/verification/Table/Table";
 import StatusCell from "@/components/verification/TableUtility/StatusCell";
 
-
-
-const COLUMNS = [
-  {
-    header: "Nama Product",
-    accessorKey: "name",
-  },
-  // {
-  //   header: "Kategori Produk",
-  //   accessorKey: "category",
-  // },
-  {
-    header: "SKU",
-    accessorKey: "SKU",
-  },
-  // {
-  //   header: "Unit",
-  //   accessorKey: "unit",
-  // },
-  {
-    header: "Stok Tersisa",
-    accessorKey: "current_stock",
-    filterFn: "equalsNumber",
-  },
-  {
-    header: "Harga",
-    accessorKey: "selling_price",
-    filterFn: "equalsNumber",
-  },
-  {
-    header: "Status",
-    accessorKey: "status",
-    cell: StatusCell,
-    filterFn: "equalsNumber",
-    enableColumnSearch: false,
-  },
-  {
-    header: "Tanggal Dibuat",
-    accessorKey: "created_at",
-  },
-  {
-    header: "Update Terakhir",
-    accessorKey: "updated_at",
-  },
-];
-
-
 type ProductMatch = {
   matched_product_id: string | null;
   matched_product_name: string | null;
@@ -235,9 +188,7 @@ export default function ImportsPage() {
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error(
-            result.message ?? "Gagal mengambil data produk",
-          );
+          throw new Error(result.message ?? "Gagal mengambil data produk");
         }
 
         const mappedProducts: ProductTableItem[] = result.data.map(
@@ -422,7 +373,12 @@ export default function ImportsPage() {
               </p>
             </div>
 
-            <label className={"cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 " + `${isLoadingExcel? "disabled" : ""}`}>
+            <label
+              className={
+                "cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 " +
+                `${isLoadingExcel ? "disabled" : ""}`
+              }
+            >
               {isLoadingExcel ? "Membaca..." : "Pilih File"}
               <input
                 type="file"
@@ -570,23 +526,7 @@ export default function ImportsPage() {
           )}
         </section>
       </div>
-        
-      <div className="mx-auto w-full max-w-7xl "> 
-        <h2 className="text-3xl font-bold mb-5">Informasi Product: </h2>
-        {isLoadingProducts ? (
-          <div className="rounded-xl bg-white p-6 text-slate-500 shadow-sm">
-            Memuat data produk...
-          </div>
-        ) : (
-          <Table
-            HeaderProps={COLUMNS}
-            data={products}
-            withAction={false}
-          />
-        )}
-      </div>
     </main>
-
   );
 }
 
