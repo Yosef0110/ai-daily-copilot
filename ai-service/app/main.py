@@ -3,10 +3,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
-# To Import Forecasting
-from app.routers import copilot, forecasting
-# For CORS Block (locally testing purposes)
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.routers import copilot, forecasting, imports
+
+load_dotenv()
 
 app = FastAPI(
     title="AI Daily Copilot AI Service",
@@ -28,6 +29,7 @@ app.add_middleware(
 # Application routers
 app.include_router(forecasting.router)
 app.include_router(copilot.router)
+app.include_router(imports.router)
 
 @app.get("/health")
 def health_check() -> dict:
