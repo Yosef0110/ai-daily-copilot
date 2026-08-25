@@ -156,7 +156,9 @@ if (dockerStatus.error) {
 
 if (dockerStatus.status !== 0) {
   console.error("Docker Desktop belum berjalan.");
-  console.error("Jalankan Docker Desktop lalu jalankan npm run dev lagi.");
+  console.error(
+    "Jalankan Docker Desktop lalu jalankan npm run dev lagi.",
+  );
   process.exit(1);
 }
 
@@ -314,6 +316,179 @@ fs.writeFileSync(
 console.log("Local web/.env.local is ready.");
 
 // ============================================================
+// OLLAMA
+// ============================================================
+
+const OLLAMA_MODEL = "qwen2.5:7b";
+
+console.log("Checking Ollama...");
+
+if (!commandExists("ollama")) {
+  console.error("\nOllama tidak ditemukan.");
+  console.error(
+    "Install Ollama terlebih dahulu, lalu jalankan npm run dev lagi.",
+  );
+  console.error("https://ollama.com/download");
+  process.exit(1);
+}
+
+console.log("Ollama CLI found.");
+
+// Check whether the Ollama server is reachable.
+let ollamaStatus = spawnSync(
+  "ollama",
+  ["list"],
+  {
+    cwd: ROOT,
+    encoding: "utf8",
+    shell: false,
+  },
+);
+
+// On macOS/Windows, Ollama normally runs as an application/service.
+// If the CLI exists but the server is not running, try starting it.
+if (ollamaStatus.status !== 0) {
+  console.log("Ollama server is not running. Starting Ollama...");
+
+  const ollamaServeProcess = spawn(
+    "ollama",
+    ["serve"],
+    {
+      cwd: ROOT,
+      stdio: "ignore",
+      detached: true,
+      shell: false,
+    },
+  );
+
+  ollamaServeProcess.unref();
+
+  // Give Ollama a few seconds to start.
+  const maxAttempts = 10;
+  let ollamaReady = false;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const waitResult = spawnSync(
+      process.execPath,
+      [
+        "-e",
+        "setTimeout(() => process.exit(0), 1000)",
+      ],
+      {
+        stdio: "ignore",
+      },
+    );
+
+    if (waitResult.status !== 0) {
+      break;
+    }
+
+    ollamaStatus = spawnSync(
+      "ollama",
+      ["list"],
+      {
+        cwd: ROOT,
+        encoding: "utf8",
+        shell: false,
+      },
+    );
+
+    if (ollamaStatus.status === 0) {
+      ollamaReady = true;
+      break;
+    }
+
+    console.log(
+      `Waiting for Ollama... (${attempt}/${maxAttempts})`,
+    );
+  }
+
+  if (!ollamaReady) {
+    console.error(
+      "Ollama gagal dijalankan secara otomatis.",
+    );
+    console.error(
+      "Jalankan Ollama secara manual lalu coba npm run dev lagi.",
+    );
+    process.exit(1);
+  }
+}
+
+console.log("Ollama is running.");
+
+// ============================================================
+// OLLAMA MODEL
+// ============================================================
+
+console.log(`Checking AI model ${OLLAMA_MODEL}...`);
+
+const modelListResult = spawnSync(
+  "ollama",
+  ["list"],
+  {
+    cwd: ROOT,
+    encoding: "utf8",
+    shell: false,
+  },
+);
+
+if (modelListResult.status !== 0) {
+  console.error("Failed to retrieve Ollama models.");
+  process.exit(1);
+}
+
+const installedModels = modelListResult.stdout ?? "";
+
+const modelInstalled = installedModels
+  .split("\n")
+  .some((line) => {
+    const modelName = line.trim().split(/\s+/)[0];
+
+    return (
+      modelName === OLLAMA_MODEL ||
+      modelName?.startsWith(`${OLLAMA_MODEL}:`)
+    );
+  });
+
+if (!modelInstalled) {
+  console.log(
+    `${OLLAMA_MODEL} belum tersedia.`,
+  );
+  console.log(
+    "Downloading AI model. Proses pertama kali dapat memakan waktu...",
+  );
+
+  const pullResult = spawnSync(
+    "ollama",
+    ["pull", OLLAMA_MODEL],
+    {
+      cwd: ROOT,
+      stdio: "inherit",
+      shell: false,
+    },
+  );
+
+  if (pullResult.status !== 0) {
+    console.error(
+      `Failed to download ${OLLAMA_MODEL}.`,
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `${OLLAMA_MODEL} downloaded successfully.`,
+  );
+} else {
+  console.log(
+    `${OLLAMA_MODEL} already installed.`,
+  );
+}
+
+console.log("AI model ready.");
+
+
+
+// ============================================================
 // NEXT.JS + FASTAPI
 // ============================================================
 
@@ -385,7 +560,7 @@ if (IS_WINDOWS && pythonCommand === "py") {
 }
 
 // ============================================================
-// NEXT.JS + FASTAPI
+// SHUTDOWN HANDLING
 // ============================================================
 
 let shuttingDown = false;

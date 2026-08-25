@@ -1,6 +1,7 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Topbar } from "@/components/layout/topbar";
+import AICopilot from "@/components/copilot/AICopilot";
 
 export default function AppLayout({
   children,
@@ -19,6 +20,7 @@ export default function AppLayout({
         </div>
       </div>
 
+      <AICopilot />
       <MobileNav />
     </div>
   );
